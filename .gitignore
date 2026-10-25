@@ -1,0 +1,28 @@
+# Local signing material and configuration
+/keystore/
+*.jks
+*.keystore
+*.pem
+.env
+.env.*
+!.env.example
+
+# Build outputs and local history
+/build/
+/backups/
+*.apk
+*.apk.idsig
+*.class
+*.dex
+*.log
+
+# Generated UI captures (keep the output directory)
+/screenshots/*
+!/screenshots/.gitkeep
+
+# Local caches and editor files
+__pycache__/
+*.py[cod]
+.DS_Store
+.idea/
+.vscode/
