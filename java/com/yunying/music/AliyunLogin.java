@@ -126,6 +126,7 @@ public class AliyunLogin {
         Config.aliDriveId="";Config.aliUserId="";Config.aliDeviceId="";Config.aliPrivateKey="";
         Config.aliExpire=System.currentTimeMillis()+Math.max(60,pds.optLong("expires_in",7200))*1000L;
         String name=find(pds,"nick_name","nickName","user_name","userName");Config.aliDriveName=name==null?"阿里云盘":name;
+        String avatar=find(pds,"avatar","avatar_url","avatarUrl");Config.aliAvatar=avatar==null?"":avatar;
         if(Config.aliAccess.isEmpty())refreshWebToken();
         Config.persist();
     }

@@ -49,7 +49,7 @@ final class GlassDrawable extends Drawable {
         paint.setShader(sheen);paint.setAlpha(alpha);canvas.drawRoundRect(surface,surfaceRadius,surfaceRadius,paint);
         }
         if(edge!=null){rotation.setRotate(Ui.motionEnabled(context)?(android.os.SystemClock.uptimeMillis()%2400)*360f/2400:0,bounds.centerX(),bounds.centerY());edge.setLocalMatrix(rotation);}
-        paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(stroke+Ui.dp(context,2f)*focus);paint.setShader(edge);paint.setAlpha((int)(alpha*(outlineOnly?focus:(.05f+.95f*focus))));canvas.drawRoundRect(bounds,radius,radius,paint);
+        paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(stroke+Ui.dp(context,.35f)*focus);paint.setShader(edge);paint.setAlpha((int)(alpha*(outlineOnly?focus:(.05f+.95f*focus))));canvas.drawRoundRect(bounds,radius,radius,paint);
         if(focus>.01f && isVisible() && Ui.motionEnabled(context))scheduleSelf(frame,android.os.SystemClock.uptimeMillis()+16);
         else unscheduleSelf(frame);
         paint.setShader(null);paint.setAlpha(255);

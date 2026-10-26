@@ -133,6 +133,7 @@ public class Aliyun {
         if(epoch!=Config.authVersion())throw new Exception("登录操作已取消");
         Config.aliDriveId=id;Config.aliUserId=user.optString("user_id",Config.aliUserId);
         String nickname=user.optString("nick_name",user.optString("user_name",user.optString("name","")));if(!nickname.isEmpty())Config.aliDriveName=nickname;
+        Config.aliAvatar=user.optString("avatar",user.optString("avatar_url",Config.aliAvatar));
         Config.persist();
     }
 

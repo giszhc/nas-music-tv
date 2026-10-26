@@ -166,15 +166,24 @@ public class PlayerActivity extends Activity implements PlayerService.Listener {
                 "自动搜索封面："+(Config.autoCover?"开启":"关闭"),
                 "歌词时间偏移："+Config.lyricOffset+" ms",
                 rematching?"正在重新匹配歌词和封面…":"重新匹配歌词和封面",
-                "返回播放列表","停止播放"},-1,index->{
+                "修改歌曲名和歌手","返回播放列表","停止播放"},-1,index->{
             if(index==0||index==1){
                 if(index==0)Config.autoLyrics=!Config.autoLyrics;else Config.autoCover=!Config.autoCover;
                 Config.save(this);shownTrack="";sync();showMore();
             } else if(index==2)showLyricOffset();
             else if(index==3)rematchMetadata();
-            else if(index==4){Ui.open(this,new android.content.Intent(this,MainActivity.class).addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP));finish();}
+            else if(index==4)editSongInfo();
+            else if(index==5){Ui.open(this,new android.content.Intent(this,MainActivity.class).addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP));finish();}
             else{PlayerService.command(this,PlayerService.ACTION_STOP,-1);finish();}
         }).show();
+    }
+    private void editSongInfo(){
+        PlayerService service=PlayerService.instance;Entry entry=service==null?null:service.current();
+        if(entry==null){android.widget.Toast.makeText(this,"请先播放一首歌曲",0).show();return;}
+        SongInfoDialog.show(this,entry,()->{
+            metadataRequest++;rematching=false;sync();
+            if(PlayerService.instance!=null&&PlayerService.instance.current()==entry)rematchMetadata();
+        });
     }
     private void showLyricOffset() {
         new TvChoiceDialog(this,"歌词时间偏移："+Config.lyricOffset+" ms",new String[]{"提前 0.5 秒","延后 0.5 秒","重置"},-1,index->{
@@ -275,6 +284,7 @@ public class PlayerActivity extends Activity implements PlayerService.Listener {
     }
     private void onTrackChanged(final Entry e, final int durationMs, final boolean refresh) {
         final int request=++metadataRequest;
+        final String matchName=MusicLibrary.matchName(this,e);
         rematching=refresh;
         if(!refresh){
         coverImg.setImageBitmap(null);
@@ -296,8 +306,8 @@ public class PlayerActivity extends Activity implements PlayerService.Listener {
         io.execute(new Runnable() {
             @Override public void run() {
                 if(wantCover&&!refresh){final Bitmap cached=MusicLibrary.artwork(PlayerActivity.this,e);if(cached!=null){final Bitmap background=Ui.blur(cached);ui.post(()->{if(request!=metadataRequest||isFinishing()||isDestroyed()||PlayerService.instance==null||PlayerService.instance.current()!=e)return;cover=cached;coverImg.setImageBitmap(roundBitmap(cached,Ui.dp(PlayerActivity.this,10)));coverText.setVisibility(View.GONE);backdrop.setImageBitmap(background);backdrop.setAlpha(1f);});}}
-                OnlineMeta.Meta m = OnlineMeta.fetch(metaDir(), e.name, durationMs, refresh);
-                MusicLibrary.metadata(PlayerActivity.this,e,m);
+                OnlineMeta.Meta m = OnlineMeta.fetch(metaDir(), matchName, durationMs, refresh);
+
                 final Bitmap bmp = (wantCover && m.cover != null)
                         ? BitmapFactory.decodeByteArray(m.cover, 0, m.cover.length) : null;
 
@@ -311,6 +321,7 @@ public class PlayerActivity extends Activity implements PlayerService.Listener {
                         Entry cur = PlayerService.instance == null ? null
                                 : PlayerService.instance.current();
                         if (cur != e || request!=metadataRequest || isFinishing() || isDestroyed()) return;
+                        MusicLibrary.metadata(PlayerActivity.this,e,m);
                         rematching=false;
                         if(refresh)android.widget.Toast.makeText(PlayerActivity.this,
                             (m.hasLrc()?"歌词已更新":"未找到新歌词，保留原歌词")+"；"+(bmp!=null?"封面已更新":"未找到新封面，保留原封面"),1).show();

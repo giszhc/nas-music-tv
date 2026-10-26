@@ -121,9 +121,14 @@ public final class MusicLibrary {
             stream.write(m.cover); stream.close();
         } catch (Exception ignored) { }
     }
-    public static String songTitle(Context c, Entry e) { return prefs(c).getString(metaKey(e) + "title", OnlineMeta.splitName(e.name)[0]); }
+    public static void correctMetadata(Context c,Entry e,String title,String artist){prefs(c).edit().putString(metaKey(e)+"manualTitle",title).putString(metaKey(e)+"manualArtist",artist).apply();}
+    public static String matchName(Context c,Entry e){
+        String k=metaKey(e);if(!prefs(c).contains(k+"manualTitle"))return e.name;
+        String singer=prefs(c).getString(k+"manualArtist","");return (singer.isEmpty()?"":singer+" - ")+prefs(c).getString(k+"manualTitle","")+".mp3";
+    }
+    public static String songTitle(Context c, Entry e) { return prefs(c).getString(metaKey(e)+"manualTitle",prefs(c).getString(metaKey(e) + "title", OnlineMeta.splitName(e.name)[0])); }
     public static String artist(Context c, Entry e) {
-        String artist = prefs(c).getString(metaKey(e) + "artist", OnlineMeta.splitName(e.name)[1]);
+        String artist = prefs(c).getString(metaKey(e)+"manualArtist",prefs(c).getString(metaKey(e) + "artist", OnlineMeta.splitName(e.name)[1]));
         return artist.isEmpty() ? "未知歌手" : artist;
     }
     public static String album(Context c, Entry e) {

@@ -30,6 +30,7 @@ public class Config {
     public static long   aliExpire = 0L;
     public static String aliDriveId = "";
     public static String aliDriveName = "";
+    public static String aliAvatar="";
 
     /* 在线元数据 */
     public static boolean autoLyrics = true;
@@ -69,6 +70,7 @@ public class Config {
         aliExpire  = p.getLong("aliExpire", 0L);
         aliDriveId = p.getString("aliDriveId", "");
         aliDriveName = p.getString("aliDriveName", "");
+        aliAvatar=p.getString("aliAvatar", "");
         autoLyrics = p.getBoolean("autoLyrics", true);
         autoCover  = p.getBoolean("autoCover", true);
         lyricOffset = p.getInt("lyricOffset", 0);
@@ -91,7 +93,7 @@ public class Config {
                 .putString("aliClientId", aliClientId).putString("aliSecret", aliSecret)
                 .putString("aliRefresh", aliRefresh).putString("aliAccess", aliAccess)
                 .putLong("aliExpire", aliExpire)
-                .putString("aliDriveId", aliDriveId).putString("aliDriveName", aliDriveName)
+                .putString("aliDriveId", aliDriveId).putString("aliDriveName", aliDriveName).putString("aliAvatar",aliAvatar)
                 .putBoolean("autoLyrics", autoLyrics).putBoolean("autoCover", autoCover).putInt("lyricOffset", lyricOffset)
                 .apply();
     }

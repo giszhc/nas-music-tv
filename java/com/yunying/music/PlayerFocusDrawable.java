@@ -27,7 +27,7 @@ final class PlayerFocusDrawable extends Drawable {
         if (!active) return;
         Rect b = getBounds();
         float cx = b.exactCenterX(), cy = b.exactCenterY();
-        float width = Ui.dp(context, 2), radius = Math.min(b.width(), b.height()) / 2f - width / 2f;
+        float width = Math.max(1,Ui.dp(context, 1)), radius = Math.min(b.width(), b.height()) / 2f - width / 2f;
         paint.setShader(null);
         paint.setStyle(Paint.Style.FILL);
         paint.setColor(0xFFF6F6F6);
