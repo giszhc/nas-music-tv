@@ -18,12 +18,15 @@ public final class SearchActivity extends Activity {
     private final Handler ui=new Handler();private final ExecutorService io=Executors.newSingleThreadExecutor();
     private volatile int generation;private PinyinIndex index;
     private String query="";private int mode,tab,lastRenderedMode=-1;
-    @Override public void onCreate(Bundle state){super.onCreate(state);Ui.immersive(this);catalog.addAll(MusicLibrary.read(this,"catalog"));if(catalog.isEmpty())catalog.addAll(MusicLibrary.playlist(this));root=new FrameLayout(this);root.setBackgroundColor(Ui.BG_TOP);setContentView(root);buildKeyboard();Ui.installFocusMotion(keyboard);render(false);search();lastKey.requestFocus();}
+    @Override public void onCreate(Bundle state){super.onCreate(state);Ui.immersive(this);catalog.addAll(MusicLibrary.read(this,"catalog"));if(catalog.isEmpty())catalog.addAll(MusicLibrary.playlist(this));root=new FrameLayout(this);root.setClipChildren(false);root.setBackgroundColor(Ui.BG_TOP);setContentView(root);buildKeyboard();Ui.installFocusMotion(keyboard);render(false);search();lastKey.requestFocus();}
     private TextView key(String text,String kind,Runnable action){
         TextView button=kind==null?Ui.text(this,text,19,Ui.TEXT,false):new IconTextView(this,kind);button.setText(text);button.setTextColor(Ui.textStates(Ui.TEXT_ON_LIGHT,Ui.TEXT));button.setGravity(Gravity.CENTER);button.setFocusable(true);button.setClickable(true);button.setBackground(Ui.cardFocusable(this,4));if(android.os.Build.VERSION.SDK_INT>=26)button.setDefaultFocusHighlightEnabled(false);button.setOnClickListener(v->{lastKey=button;action.run();});return button;
     }
     private void buildKeyboard(){
-        keyboard=new FrameLayout(this);Ui.place(root,keyboard,48,28,272,470);
+        keyboard=new FrameLayout(this);
+        // 输入框与键盘区域等宽，允许聚焦放大后的边缘绘制到区域外。
+        keyboard.setClipChildren(false);keyboard.setClipToPadding(false);
+        Ui.place(root,keyboard,48,28,272,470);
         input=new SearchInputView(this);input.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX,Ui.dp(this,18));input.setTextColor(Ui.TEXT);input.setHint("输入 首字母/全拼 搜索");input.setHintTextColor(Ui.TEXT2);input.setSingleLine(true);input.setFocusable(true);input.setClickable(true);input.setOnClickListener(v->lastKey.requestFocus());input.setGravity(Gravity.CENTER_VERTICAL);input.setPadding(Ui.dp(this,24),0,Ui.dp(this,18),0);input.setBackground(Ui.round(Ui.CARD,this,26));Ui.place(keyboard,input,0,0,272,48);
         String chars="ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789";
         for(int i=0;i<chars.length();i++){String value=String.valueOf(chars.charAt(i));TextView button=key(value,null,()->append(value));Ui.place(keyboard,button,(i%5)*56,72+(i/5)*44,48,36);if(i==12)lastKey=button;}

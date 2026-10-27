@@ -11,7 +11,7 @@ tap(changed);find(lyrics)
 offset=next(n.get('text') for n in nodes() if n.get('text','').startswith('歌词时间偏移：'))
 tap(offset);tap('提前 0.5 秒');find('延后 0.5 秒');tap('延后 0.5 秒');find(offset);back()
 tap(desc='更多');snap('v1.5-player-more.png');tap('重新匹配歌词和封面');time.sleep(.5)
-find(desc='更多');back();menu('设置');find('音乐目录');find('群晖 NAS');find('阿里云盘')
+find(desc='更多');back();menu('设置');find('音乐目录');find('群晖 NAS');assert not any(n.get('text')=='阿里云盘' for n in nodes())
 assert not any(n.get('text') in ('播放','联网自动搜索歌词','联网自动搜索封面') for n in nodes())
 focus('群晖 NAS');snap('v1.5-glass-settings.png');time.sleep(.35);snap('v1.5-glass-settings-motion.png')
 from PIL import Image,ImageChops

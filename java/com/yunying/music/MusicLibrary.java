@@ -39,6 +39,7 @@ public final class MusicLibrary {
             for (int i = 0; i < a.length(); i++) {
                 JSONObject j = a.getJSONObject(i);
                 Entry e = new Entry(j.optString("name"), false, j.optString("source", Entry.SRC_NAS));
+                if(!Entry.SRC_NAS.equals(e.source))continue;
                 e.audiobook=j.optBoolean("audiobook",false)||"books".equals(name)||"bookRecent".equals(name);
                 e.path = j.optString("path"); e.id = j.optString("id"); e.size = j.optLong("size");
                 if (e.isAudio()) out.add(e);

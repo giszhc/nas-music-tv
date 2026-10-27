@@ -32,9 +32,8 @@ try:
     adb('shell','input','keyevent','82');tap('正在播放');time.sleep(1);tap('播放队列',prefix=True);check_scroll('queue-fullhd');snap('reference-long-queue.png');back();back()
     adb('shell','wm','size','1920x720');adb('shell','am','force-stop','com.yunying.music');adb('shell','am','start','-n','com.yunying.music/.MainActivity');time.sleep(.7)
     find('播放列表');check_scroll('playlist')
-    adb('shell','input','keyevent','82');tap('设置');tap('群晖 NAS');check_scroll('settings-nas',True);find('保存并测试 NAS')
-    focus('阿里云盘');tap('阿里云盘');focus('高级：开放平台凭据');tap('高级：开放平台凭据');check_scroll('settings-alipan',True)
-    tap('关闭');adb('shell','input','keyevent','82');tap('正在播放');time.sleep(.6);tap('播放队列',prefix=True)
+    adb('shell','input','keyevent','82');tap('设置');tap('群晖 NAS');check_scroll('settings-nas',True);find('保存')
+    back();back();adb('shell','input','keyevent','82');tap('正在播放');time.sleep(.6);tap('播放队列',prefix=True)
     # 队列在更短窗口中也必须有独立滚动边界。
     adb('shell','wm','size','1920x600');back();back();adb('shell','am','force-stop','com.yunying.music');adb('shell','am','start','-n','com.yunying.music/.MainActivity');time.sleep(.5);adb('shell','input','keyevent','82');tap('正在播放');tap('播放队列',prefix=True);check_scroll('queue')
 finally:

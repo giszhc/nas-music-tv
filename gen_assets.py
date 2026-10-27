@@ -124,7 +124,7 @@ def make_banner(w=320, h=180):
     f1 = find_font(int(big_h * 0.22))
     f2 = find_font(int(big_h * 0.10))
     d.text((int(big_w * 0.07), int(big_h * 0.50)), "云影音乐", font=f1, fill=(255, 255, 255, 255))
-    d.text((int(big_w * 0.075), int(big_h * 0.78)), "NAS · 阿里云盘", font=f2,
+    d.text((int(big_w * 0.075), int(big_h * 0.78)), "群晖 NAS", font=f2,
            fill=(0, 193, 255, 255))
     return img.resize((w, h), Image.LANCZOS)
 

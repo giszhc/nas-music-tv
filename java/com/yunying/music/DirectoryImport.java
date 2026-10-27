@@ -17,7 +17,7 @@ final class DirectoryImport {
         while(!pending.isEmpty()) {
             if(Thread.currentThread().isInterrupted())throw new InterruptedException();
             Entry entry=pending.removeFirst();
-            String identity=Entry.SRC_ALI.equals(entry.source)?entry.id:entry.path;
+            String identity=entry.path;
             if(identity.isEmpty()) {if(entry.dir)result.failedDirectories++;continue;}
             if(!visited.add(entry.source+":"+identity))continue;
             if(entry.dir) {

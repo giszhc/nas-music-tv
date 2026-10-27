@@ -90,11 +90,9 @@ public class PlayerService extends Service {
     private final List<Entry> queue = new ArrayList<>();
     private int index = -1;
     private MediaPlayer mp;
-    private CloudAudioSource cloudSource;
     private java.util.concurrent.Future<?> loadingTask;
     private Runnable loadTimeout;
     private String loadingStatus="";
-    private int retryCount;
     private boolean buffering;
     private long loadStarted;
     private final SoundEffects effects=new SoundEffects();
@@ -184,7 +182,6 @@ public class PlayerService extends Service {
     /* ------------------------------- 播放控制 ------------------------------- */
 
     public void playAt(int i) {
-        retryCount=0;
         openAt(i);
     }
 
@@ -205,49 +202,23 @@ public class PlayerService extends Service {
         notifyState();
         updateNotification();
         loadStarted=android.os.SystemClock.elapsedRealtime();
-        stage(request,Entry.SRC_ALI.equals(e.source)?"正在获取云盘播放地址…":"正在连接音乐源…",25000);
+        stage(request,"正在连接音乐源…",25000);
         loadingTask=io.submit(new Runnable() {
             @Override public void run() {
                 try {
                     if (request != generation) return;
                     final String url;
                     final Map<String, String> headers;
-                    if (Entry.SRC_ALI.equals(e.source)) {
-                        url = Aliyun.downloadUrl(e.id);
-                        headers = Aliyun.playHeaders();
-                    } else {
-                        url = Synology.downloadUrl(e.path);
-                        headers = Synology.playHeaders();
-                    }
-                    if(request!=generation)return;
-                    if(Entry.SRC_ALI.equals(e.source) && Build.VERSION.SDK_INT>=23){
-                        final CloudAudioSource source=new CloudAudioSource(url,headers);
-                        ui.post(()->{
-                            if(request!=generation){source.close();return;}
-                            cloudSource=source;
-                            stage(request,"正在连接云盘并预读音频…",20000);
-                        });
-                        try{
-                            source.prepare();
-                            ui.post(()->{
-                                if(request!=generation){source.close();return;}
-                                android.util.Log.i("YYPlayback","cloud first_byte_ms="+source.firstByteMs()+" bytes="+source.bytesRead());
-                                stage(request,"正在解析音频…",20000);
-                                startPlayer(url,headers,request,source);
-                            });
-                        }catch(Exception ex){
-                            String message=source.failure().isEmpty()?"云盘音频连接失败":source.failure();
-                            source.close();
-                            ui.post(()->{if(request==generation)playbackFailed(message,!message.contains("429")&&!message.contains("错误页面"));});
-                        }
-                    }else ui.post(()->{if(request==generation){
-                        stage(request,"正在加载音频…",20000);startPlayer(url,headers,request,null);
+                    url = Synology.downloadUrl(e.path);
+                    headers = Synology.playHeaders();
+                    ui.post(()->{if(request==generation){
+                        stage(request,"正在加载音频…",20000);startPlayer(url,headers,request);
                     }});
                 } catch (final Exception ex) {
                     ui.post(new Runnable() {
                         @Override public void run() {
                             if (request != generation) return;
-                            playbackFailed("获取播放地址失败："+(ex.getMessage()==null?"请检查网络或登录状态":ex.getMessage()),false);
+                            playbackFailed("获取播放地址失败："+(ex.getMessage()==null?"请检查网络或登录状态":ex.getMessage()));
                         }
                     });
                 }
@@ -258,26 +229,19 @@ public class PlayerService extends Service {
     private void stage(final int request,String text,int timeoutMs){
         loadingStatus=text;
         if(loadTimeout!=null)ui.removeCallbacks(loadTimeout);
-        loadTimeout=()->{if(request==generation && isPreparing())playbackFailed(text.replace("…","")+"超时，请检查电视网络",true);};
+        loadTimeout=()->{if(request==generation && isPreparing())playbackFailed(text.replace("…","")+"超时，请检查电视网络");};
         ui.postDelayed(loadTimeout,timeoutMs);notifyState();updateNotification();
     }
 
-    private void playbackFailed(String message,boolean retryable){
-        boolean cloud=current()!=null && Entry.SRC_ALI.equals(current().source);
-        android.util.Log.w("YYPlayback","failure elapsed_ms="+(android.os.SystemClock.elapsedRealtime()-loadStarted)+" retry="+retryCount+" message="+message);
-        if(cloud && retryable && retryCount++==0){
-            int savedPosition=getPosition();
-            if(savedPosition>0){restorePosition=savedPosition;restorePaused=!playing;}
-            openAt(index);return;
-        }
+    private void playbackFailed(String message){
         generation++;releasePlayer();
         preparing=false;buffering=false;playing=false;loadingStatus="";error=message;
         notifyState();updateNotification();
     }
 
-    private void startPlayer(String url, Map<String, String> headers, final int request,CloudAudioSource source) {
+    private void startPlayer(String url, Map<String, String> headers, final int request) {
         if (!requestFocus()) {
-            playbackFailed("未获得音频焦点，请重试",false);return;
+            playbackFailed("未获得音频焦点，请重试");return;
         }
         try {
             mp = new MediaPlayer();
@@ -309,9 +273,7 @@ public class PlayerService extends Service {
             mp.setOnErrorListener(new MediaPlayer.OnErrorListener() {
                 @Override public boolean onError(MediaPlayer p, int what, int extra) {
                     if(request!=generation || p!=mp)return true;
-                    String network=cloudSource==null?"":cloudSource.failure();
-                    playbackFailed(network.isEmpty()?"音频加载失败（"+what+"/"+extra+"），请检查网络或音频格式":network,
-                        !network.isEmpty() || extra==MediaPlayer.MEDIA_ERROR_IO || extra==MediaPlayer.MEDIA_ERROR_TIMED_OUT);
+                    playbackFailed("音频加载失败（"+what+"/"+extra+"），请检查网络或音频格式");
                     return true;
                 }
             });
@@ -324,11 +286,10 @@ public class PlayerService extends Service {
                 else if(what==MediaPlayer.MEDIA_INFO_BUFFERING_END){buffering=false;loadingStatus="";if(!preparing && loadTimeout!=null)ui.removeCallbacks(loadTimeout);}
                 notifyState();updateNotification();return true;
             });
-            if(source!=null && Build.VERSION.SDK_INT>=23)mp.setDataSource(source);
-            else mp.setDataSource(this, android.net.Uri.parse(url), headers);
+            mp.setDataSource(this, android.net.Uri.parse(url), headers);
             mp.prepareAsync();
         } catch (Throwable t) {
-            playbackFailed("无法初始化播放器（"+t.getClass().getSimpleName()+"）",false);
+            playbackFailed("无法初始化播放器（"+t.getClass().getSimpleName()+"）");
         }
     }
 
@@ -387,7 +348,6 @@ public class PlayerService extends Service {
     private void releasePlayer() {
         if(loadTimeout!=null){ui.removeCallbacks(loadTimeout);loadTimeout=null;}
         if(loadingTask!=null){loadingTask.cancel(true);loadingTask=null;}
-        if(cloudSource!=null){cloudSource.close();cloudSource=null;}
         effects.release();
         if (mp != null) {
             try { mp.reset(); } catch (Throwable ignored) { }
@@ -484,7 +444,7 @@ public class PlayerService extends Service {
                 MediaMetadata.Builder mb = new MediaMetadata.Builder()
                         .putString(MediaMetadata.METADATA_KEY_TITLE, e.title())
                         .putString(MediaMetadata.METADATA_KEY_ARTIST,
-                                Entry.SRC_ALI.equals(e.source) ? "阿里云盘" : "NAS 音乐")
+                                "NAS 音乐")
                         .putLong(MediaMetadata.METADATA_KEY_DURATION, durationMs);
                 session.setMetadata(mb.build());
             }
@@ -537,8 +497,7 @@ public class PlayerService extends Service {
             if (nm == null) return;
             String sub = error.length() > 0 ? error
                     : (isPreparing() ? loadingStatus
-                    : (Entry.SRC_ALI.equals(current() == null ? "" : current().source)
-                        ? "阿里云盘" : "NAS 音乐"));
+                    : "NAS 音乐");
             nm.notify(NOTIF_ID, buildNotification(currentTitle(), sub, playing));
         } catch (Throwable ignored) { }
     }

@@ -1,14 +1,13 @@
 package com.yunying.music;
 
-/** 统一的媒体条目：NAS 用 path，阿里云盘用 id。 */
+/** 群晖 NAS 媒体条目。 */
 public class Entry {
 
     public static final String SRC_NAS = "nas";
-    public static final String SRC_ALI = "ali";
 
     public String name = "";
-    public String path = "";     // NAS 绝对路径 / 阿里云盘 parent 标识
-    public String id = "";       // 阿里云盘 file_id
+    public String path = "";     // NAS 绝对路径
+    public String id = "";       // 保留旧版条目标识以兼容本地元数据键
     public boolean dir = false;
     public boolean audiobook = false;
     public long size = 0L;

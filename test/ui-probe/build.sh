@@ -9,7 +9,7 @@ mkdir -p "$OUT/classes" "$OUT/dex"
 mkdir -p "$OUT/assets/formats"
 if [ -d /tmp/yy-effects-formats ]; then cp /tmp/yy-effects-formats/tone.* "$OUT/assets/formats/"; fi
 "$BT/aapt2" link -A "$OUT/assets" -o "$OUT/base.apk" -I "$SDK/platforms/android-34/android.jar" --manifest "$ROOT/AndroidManifest.xml"
-javac -encoding UTF-8 -source 8 -target 8 -nowarn -bootclasspath "$SDK/platforms/android-34/android.jar:$BT/core-lambda-stubs.jar" -d "$OUT/classes" "$ROOT/Probe.java" "$ROOT/MotionProbe.java" "$ROOT/FocusMotionProbe.java" "$ROOT/AuthProbe.java" "$ROOT/ProtocolChecks.java" "$ROOT/SoundChecks.java" "$ROOT/SoundProbe.java" "$ROOT/MetadataProbe.java" "$ROOT/../../java/com/yunying/music/MusicLibrary.java" "$ROOT/../../java/com/yunying/music/OnlineMeta.java" "$ROOT/../../java/com/yunying/music/SoundEffects.java" "$ROOT/../../java/com/yunying/music/"{Aliyun,AliyunLogin,AliyunDevice,Http,B64,Config,Entry}.java
+javac -encoding UTF-8 -source 8 -target 8 -nowarn -bootclasspath "$SDK/platforms/android-34/android.jar:$BT/core-lambda-stubs.jar" -d "$OUT/classes" "$ROOT/Probe.java" "$ROOT/MotionProbe.java" "$ROOT/FocusMotionProbe.java" "$ROOT/NasOnlyProbe.java" "$ROOT/SoundChecks.java" "$ROOT/SoundProbe.java" "$ROOT/MetadataProbe.java" "$ROOT/../../java/com/yunying/music/MusicLibrary.java" "$ROOT/../../java/com/yunying/music/OnlineMeta.java" "$ROOT/../../java/com/yunying/music/SoundEffects.java" "$ROOT/../../java/com/yunying/music/"{Http,B64,Config,Entry}.java
 find "$OUT/classes" -name '*.class' > "$OUT/classes.txt"
 "$BT/d8" --min-api 21 --lib "$SDK/platforms/android-34/android.jar" --output "$OUT/dex" @"$OUT/classes.txt"
 python3 - "$OUT" <<'PY'
