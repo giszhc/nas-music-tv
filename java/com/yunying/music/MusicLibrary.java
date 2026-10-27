@@ -14,6 +14,13 @@ public final class MusicLibrary {
     private static android.content.SharedPreferences prefs(Context c) {
         return c.getApplicationContext().getSharedPreferences("music_library", 0);
     }
+    /** 清除媒体索引，保留账号配置、首页模块和原始文件。 */
+    public static void clearImportedAudio(Context c) {
+        prefs(c).edit().clear().putBoolean("playlistInitialized",true).apply();
+        favoriteSnapshot="";
+        favoriteKeys=java.util.Collections.emptySet();
+        META_KEYS.clear();
+    }
     public static String key(Entry e) { return e.source + ":" + e.path + ":" + e.id; }
     private static JSONArray encode(List<Entry> entries) {
         JSONArray a = new JSONArray();

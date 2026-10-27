@@ -187,7 +187,9 @@ public class Aliyun {
 
     public static Map<String, String> playHeaders() {
         Map<String, String> h = new HashMap<>();
-        h.put("Referer", "https://www.aliyundrive.com/");
+        h.put("Referer", "https://www.alipan.com/");
+        h.put("User-Agent",Http.UA);
+        h.put("Accept-Encoding","identity");
         return h;
     }
 }

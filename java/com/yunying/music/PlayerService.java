@@ -50,6 +50,22 @@ public class PlayerService extends Service {
     private static int pendingPosition;
     private static boolean pendingPaused;
 
+    public static void clearImportedAudio(Context c) {
+        pendingQueue=null;
+        pendingIndex=0;pendingPosition=0;pendingPaused=false;
+        PlayerService service=instance;
+        if(service!=null){
+            service.generation++;
+            service.queue.clear();service.index=-1;
+            service.releasePlayer();
+            service.preparing=false;service.playing=false;
+            service.positionMs=0;service.durationMs=0;service.error="";
+            service.notifyState();
+            service.stopSelf();
+        }
+        MusicLibrary.clearImportedAudio(c);
+    }
+
     public static boolean hasPending() { return pendingQueue != null && !pendingQueue.isEmpty(); }
 
     public static void playList(Context c, List<Entry> queue, int index) {
@@ -74,6 +90,13 @@ public class PlayerService extends Service {
     private final List<Entry> queue = new ArrayList<>();
     private int index = -1;
     private MediaPlayer mp;
+    private CloudAudioSource cloudSource;
+    private java.util.concurrent.Future<?> loadingTask;
+    private Runnable loadTimeout;
+    private String loadingStatus="";
+    private int retryCount;
+    private boolean buffering;
+    private long loadStarted;
     private final SoundEffects effects=new SoundEffects();
     public String applyAudioEffects(){return effects.apply(preparing?null:mp,Config.audioEffect);}
     public String audioEffectStatus(){return effects.status();}
@@ -82,7 +105,7 @@ public class PlayerService extends Service {
     private int durationMs, positionMs;
     private Listener listener;
     private final Handler ui = new Handler(Looper.getMainLooper());
-    private final ExecutorService io = Executors.newSingleThreadExecutor();
+    private final ExecutorService io = Executors.newFixedThreadPool(2);
     private MediaSession session;
     private AudioManager am;
     private AudioManager.OnAudioFocusChangeListener focusListener;
@@ -161,6 +184,11 @@ public class PlayerService extends Service {
     /* ------------------------------- 播放控制 ------------------------------- */
 
     public void playAt(int i) {
+        retryCount=0;
+        openAt(i);
+    }
+
+    private void openAt(int i) {
         if (queue.isEmpty()) return;
         index = ((i % queue.size()) + queue.size()) % queue.size();
         final Entry e = queue.get(index);
@@ -168,6 +196,7 @@ public class PlayerService extends Service {
         MusicLibrary.remember(this, e);
         releasePlayer();
         preparing = true;
+        buffering = false;
         playing = false;
         error = "";
         durationMs = 0;
@@ -175,7 +204,9 @@ public class PlayerService extends Service {
         saveQueue();
         notifyState();
         updateNotification();
-        io.execute(new Runnable() {
+        loadStarted=android.os.SystemClock.elapsedRealtime();
+        stage(request,Entry.SRC_ALI.equals(e.source)?"正在获取云盘播放地址…":"正在连接音乐源…",25000);
+        loadingTask=io.submit(new Runnable() {
             @Override public void run() {
                 try {
                     if (request != generation) return;
@@ -188,18 +219,35 @@ public class PlayerService extends Service {
                         url = Synology.downloadUrl(e.path);
                         headers = Synology.playHeaders();
                     }
-                    ui.post(new Runnable() {
-                        @Override public void run() { if (request == generation) startPlayer(url, headers); }
-                    });
+                    if(request!=generation)return;
+                    if(Entry.SRC_ALI.equals(e.source) && Build.VERSION.SDK_INT>=23){
+                        final CloudAudioSource source=new CloudAudioSource(url,headers);
+                        ui.post(()->{
+                            if(request!=generation){source.close();return;}
+                            cloudSource=source;
+                            stage(request,"正在连接云盘并预读音频…",20000);
+                        });
+                        try{
+                            source.prepare();
+                            ui.post(()->{
+                                if(request!=generation){source.close();return;}
+                                android.util.Log.i("YYPlayback","cloud first_byte_ms="+source.firstByteMs()+" bytes="+source.bytesRead());
+                                stage(request,"正在解析音频…",20000);
+                                startPlayer(url,headers,request,source);
+                            });
+                        }catch(Exception ex){
+                            String message=source.failure().isEmpty()?"云盘音频连接失败":source.failure();
+                            source.close();
+                            ui.post(()->{if(request==generation)playbackFailed(message,!message.contains("429")&&!message.contains("错误页面"));});
+                        }
+                    }else ui.post(()->{if(request==generation){
+                        stage(request,"正在加载音频…",20000);startPlayer(url,headers,request,null);
+                    }});
                 } catch (final Exception ex) {
                     ui.post(new Runnable() {
                         @Override public void run() {
                             if (request != generation) return;
-                            preparing = false;
-                            playing = false;
-                            error = ex.getMessage() == null ? "打开失败" : ex.getMessage();
-                            notifyState();
-                            updateNotification();
+                            playbackFailed("获取播放地址失败："+(ex.getMessage()==null?"请检查网络或登录状态":ex.getMessage()),false);
                         }
                     });
                 }
@@ -207,11 +255,30 @@ public class PlayerService extends Service {
         });
     }
 
-    private void startPlayer(String url, Map<String, String> headers) {
-        if (!requestFocus()) {
-            preparing = false; error = "未获得音频焦点，请重试"; notifyState(); return;
+    private void stage(final int request,String text,int timeoutMs){
+        loadingStatus=text;
+        if(loadTimeout!=null)ui.removeCallbacks(loadTimeout);
+        loadTimeout=()->{if(request==generation && isPreparing())playbackFailed(text.replace("…","")+"超时，请检查电视网络",true);};
+        ui.postDelayed(loadTimeout,timeoutMs);notifyState();updateNotification();
+    }
+
+    private void playbackFailed(String message,boolean retryable){
+        boolean cloud=current()!=null && Entry.SRC_ALI.equals(current().source);
+        android.util.Log.w("YYPlayback","failure elapsed_ms="+(android.os.SystemClock.elapsedRealtime()-loadStarted)+" retry="+retryCount+" message="+message);
+        if(cloud && retryable && retryCount++==0){
+            int savedPosition=getPosition();
+            if(savedPosition>0){restorePosition=savedPosition;restorePaused=!playing;}
+            openAt(index);return;
         }
-        releasePlayer();
+        generation++;releasePlayer();
+        preparing=false;buffering=false;playing=false;loadingStatus="";error=message;
+        notifyState();updateNotification();
+    }
+
+    private void startPlayer(String url, Map<String, String> headers, final int request,CloudAudioSource source) {
+        if (!requestFocus()) {
+            playbackFailed("未获得音频焦点，请重试",false);return;
+        }
         try {
             mp = new MediaPlayer();
             mp.setAudioAttributes(new AudioAttributes.Builder()
@@ -221,7 +288,10 @@ public class PlayerService extends Service {
             mp.setWakeMode(this, PowerManager.PARTIAL_WAKE_LOCK);
             mp.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
                 @Override public void onPrepared(MediaPlayer p) {
-                    preparing = false;
+                    if(request!=generation || p!=mp)return;
+                    if(loadTimeout!=null)ui.removeCallbacks(loadTimeout);
+                    preparing = false;buffering=false;loadingStatus="";
+                    android.util.Log.i("YYPlayback","prepared elapsed_ms="+(android.os.SystemClock.elapsedRealtime()-loadStarted));
                     durationMs = Math.max(0, p.getDuration());
                     effects.apply(p,Config.audioEffect);
                     if (restorePosition > 0) { p.seekTo(restorePosition); restorePosition = 0; }
@@ -234,33 +304,37 @@ public class PlayerService extends Service {
                 }
             });
             mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                @Override public void onCompletion(MediaPlayer p) { if (mode == 1) playAt(index); else next(); }
+                @Override public void onCompletion(MediaPlayer p) { if(request!=generation || p!=mp)return; if (mode == 1) playAt(index); else next(); }
             });
             mp.setOnErrorListener(new MediaPlayer.OnErrorListener() {
                 @Override public boolean onError(MediaPlayer p, int what, int extra) {
-                    preparing = false;
-                    playing = false;
-                    error = "播放失败（" + what + "/" + extra + "），格式可能不受支持";
-                    notifyState();
-                    updateNotification();
+                    if(request!=generation || p!=mp)return true;
+                    String network=cloudSource==null?"":cloudSource.failure();
+                    playbackFailed(network.isEmpty()?"音频加载失败（"+what+"/"+extra+"），请检查网络或音频格式":network,
+                        !network.isEmpty() || extra==MediaPlayer.MEDIA_ERROR_IO || extra==MediaPlayer.MEDIA_ERROR_TIMED_OUT);
                     return true;
                 }
             });
             mp.setOnBufferingUpdateListener(new MediaPlayer.OnBufferingUpdateListener() {
                 @Override public void onBufferingUpdate(MediaPlayer p, int percent) { }
             });
-            mp.setDataSource(this, android.net.Uri.parse(url), headers);
+            mp.setOnInfoListener((player,what,extra)->{
+                if(request!=generation || player!=mp)return true;
+                if(what==MediaPlayer.MEDIA_INFO_BUFFERING_START){buffering=true;stage(request,"网络缓冲中…",20000);}
+                else if(what==MediaPlayer.MEDIA_INFO_BUFFERING_END){buffering=false;loadingStatus="";if(!preparing && loadTimeout!=null)ui.removeCallbacks(loadTimeout);}
+                notifyState();updateNotification();return true;
+            });
+            if(source!=null && Build.VERSION.SDK_INT>=23)mp.setDataSource(source);
+            else mp.setDataSource(this, android.net.Uri.parse(url), headers);
             mp.prepareAsync();
         } catch (Throwable t) {
-            preparing = false;
-            playing = false;
-            error = "无法播放：" + t.getMessage();
-            notifyState();
+            playbackFailed("无法初始化播放器（"+t.getClass().getSimpleName()+"）",false);
         }
     }
 
     public void toggle() {
         if (preparing) return;
+        if(!error.isEmpty()){playAt(index<0?0:index);return;}
         if (mp == null) {
             if (!queue.isEmpty()) playAt(index < 0 ? 0 : index);
             return;
@@ -311,6 +385,9 @@ public class PlayerService extends Service {
     }
 
     private void releasePlayer() {
+        if(loadTimeout!=null){ui.removeCallbacks(loadTimeout);loadTimeout=null;}
+        if(loadingTask!=null){loadingTask.cancel(true);loadingTask=null;}
+        if(cloudSource!=null){cloudSource.close();cloudSource=null;}
         effects.release();
         if (mp != null) {
             try { mp.reset(); } catch (Throwable ignored) { }
@@ -322,7 +399,8 @@ public class PlayerService extends Service {
     /* ------------------------------- 状态读取 ------------------------------- */
 
     public boolean isPlaying() { return playing; }
-    public boolean isPreparing() { return preparing; }
+    public boolean isPreparing() { return preparing || buffering; }
+    public String getLoadingStatus(){return loadingStatus;}
     public String getError() { return error; }
     public int getDuration() { return durationMs; }
     public List<Entry> getQueue() { return new ArrayList<>(queue); }
@@ -392,8 +470,8 @@ public class PlayerService extends Service {
     private void updateSessionState() {
         if (session == null) return;
         try {
-            int state = playing ? PlaybackState.STATE_PLAYING
-                    : (preparing ? PlaybackState.STATE_BUFFERING : PlaybackState.STATE_PAUSED);
+            int state = !error.isEmpty()?PlaybackState.STATE_ERROR:isPreparing()?PlaybackState.STATE_BUFFERING
+                    :playing?PlaybackState.STATE_PLAYING:PlaybackState.STATE_PAUSED;
             session.setPlaybackState(new PlaybackState.Builder()
                     .setActions(PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE
                             | PlaybackState.ACTION_PLAY_PAUSE | PlaybackState.ACTION_SEEK_TO
@@ -458,7 +536,7 @@ public class PlayerService extends Service {
             NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             if (nm == null) return;
             String sub = error.length() > 0 ? error
-                    : (preparing ? "正在缓冲…"
+                    : (isPreparing() ? loadingStatus
                     : (Entry.SRC_ALI.equals(current() == null ? "" : current().source)
                         ? "阿里云盘" : "NAS 音乐"));
             nm.notify(NOTIF_ID, buildNotification(currentTitle(), sub, playing));

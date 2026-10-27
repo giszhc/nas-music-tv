@@ -34,7 +34,7 @@ public class LibraryActivity extends Activity {
         if(collection==11){java.util.Iterator<Entry> iterator=tracks.iterator();while(iterator.hasNext()){Entry e=iterator.next();if(!(e.path+e.name).matches(".*(儿童|儿歌|宝宝|童谣|kids).*"))iterator.remove();}}
         root=new FrameLayout(this);root.setBackgroundColor(Ui.BG_TOP);setContentView(root);
         heading=Ui.text(this,title(),29,Ui.TEXT,false);heading.setSingleLine(true);heading.setEllipsize(android.text.TextUtils.TruncateAt.END);Ui.place(root,heading,48,40,520,44);
-        hint=Ui.text(this,collection==3?"按菜单键编辑":"按菜单键操作",16,Ui.TEXT2,false);hint.setGravity(Gravity.CENTER);hint.setPadding(Ui.dp(this,12),0,Ui.dp(this,12),0);hint.setFocusable(true);hint.setClickable(true);hint.setBackground(Ui.tabBackground(this));hint.setTextColor(Ui.textStates(Ui.TEXT_ON_LIGHT,Ui.TEXT2));hint.setOnClickListener(v->menu());Ui.place(root,hint,740,43,172,40);
+        hint=Ui.text(this,collection==3?"按菜单键编辑":"更多",16,Ui.TEXT2,false);hint.setGravity(Gravity.CENTER);hint.setPadding(Ui.dp(this,12),0,Ui.dp(this,12),0);hint.setFocusable(true);hint.setClickable(true);hint.setBackground(Ui.tabBackground(this));hint.setTextColor(Ui.textStates(Ui.TEXT_ON_LIGHT,Ui.TEXT2));hint.setOnClickListener(v->menu());Ui.place(root,hint,740,43,172,40);
         LinearLayout bar=new LinearLayout(this);bar.setGravity(Gravity.CENTER_VERTICAL);Ui.place(root,bar,46,98,560,44);
         for(int i=0;i<3;i++){final int index=i;TextView t=Ui.text(this,"",20,Ui.TEXT,false);t.setGravity(Gravity.CENTER);t.setPadding(Ui.dp(this,12),0,Ui.dp(this,12),0);t.setFocusable(true);t.setClickable(true);t.setTextColor(Ui.textStates(Ui.TEXT_ON_LIGHT,Ui.TEXT2));t.setBackground(Ui.tabBackground(this));t.setOnClickListener(v->{tab=index;group="";editing=false;listState=null;songList=null;render(false);t.requestFocus();});LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-2,-1);lp.rightMargin=Ui.dp(this,14);bar.addView(t,lp);tabs.add(t);}
         content=new FrameLayout(this);content.setClipChildren(true);Ui.place(root,content,0,156,960,Math.max(30,Ui.height(this)-156));Ui.installFocusMotion(root);
@@ -112,7 +112,16 @@ public class LibraryActivity extends Activity {
     private void menu(){
         if(moduleId!=null){HomeModules.manage(this,moduleId,()->{if(HomeModules.get(this,moduleId)==null){finish();return;}reload();render(false);});return;}
         if(collection==3){editing=!editing;hint.setText(editing?"按返回键完成":"按菜单键编辑");render(true);return;}
-        new TvChoiceDialog(this,"更多操作",new String[]{"播放全部","正在播放","搜索","我的","设置"},-1,index->{if(index==0)play(tracks,0);else if(index==1)openPlayer();else if(index==2)Ui.open(this,new Intent(this,SearchActivity.class));else if(index==3)Ui.open(this,new Intent(this,MusicHomeActivity.class));else openSettings();}).show();
+        new TvChoiceDialog(this,"更多操作",new String[]{"播放全部","正在播放","搜索","我的","设置","清空导入内容"},-1,index->{if(index==0)play(tracks,0);else if(index==1)openPlayer();else if(index==2)Ui.open(this,new Intent(this,SearchActivity.class));else if(index==3)Ui.open(this,new Intent(this,MusicHomeActivity.class));else if(index==4)openSettings();else confirmClearImportedAudio();}).show();
+    }
+    private void confirmClearImportedAudio(){
+        new TvChoiceDialog(this,"清空所有导入内容？",new String[]{"取消","确认清空（保留原始文件）"},-1,index->{
+            if(index!=1)return;
+            PlayerService.clearImportedAudio(this);
+            group="";selectedKey="";listState=null;songList=null;
+            reload();render(false);hint.requestFocus();
+            Toast.makeText(this,"已清空导入内容、收藏和播放记录，原始文件保留",Toast.LENGTH_LONG).show();
+        }).show();
     }
     private void openSettings(){if(settings!=null&&settings.isOpen())return;settings=SettingsPanel.show(this,root,()->{if(!isFinishing()){reload();render(false);}});}
     @Override public boolean onKeyDown(int key,KeyEvent event){if(key==KeyEvent.KEYCODE_MENU){menu();return true;}if(key==KeyEvent.KEYCODE_SEARCH){Ui.open(this,new Intent(this,SearchActivity.class));return true;}return super.onKeyDown(key,event);}

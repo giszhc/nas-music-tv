@@ -23,7 +23,7 @@ public class Entry {
     }
 
     private static final String[] AUDIO_EXT = {
-            "mp3", "flac", "m4a", "aac", "wav", "ogg", "oga", "opus", "wma", "ape", "aiff", "aif", "mp4"
+            "mp3", "flac", "m4a", "aac", "wav", "ogg", "oga", "opus", "ape", "aiff", "aif", "mp4"
     };
 
     public boolean isAudio() {

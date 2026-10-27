@@ -6,9 +6,9 @@ SDK="$HOME/android-sdk"
 BT="$SDK/build-tools/34.0.0"
 PLATFORM="$SDK/platforms/android-34/android.jar"
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-OUT="$ROOT/build"
+OUT="${YY_BUILD_DIR:-$ROOT/build}"
 PKG="com.yunying.music"
-APK_NAME="YunYingMusic-1.6.apk"
+APK_NAME="YunYingMusic-1.9.apk"
 
 [ -x "$BT/aapt2" ] || { echo "缺少 build-tools：$BT"; exit 1; }
 [ -f "$PLATFORM" ] || { echo "缺少 platform android-34：$PLATFORM"; exit 1; }
@@ -28,7 +28,7 @@ echo "==> 2/6 链接资源 + 生成 R.java"
   --java "$OUT/gen" \
   --min-sdk-version 21 \
   --target-sdk-version 34 \
-  --version-code 7 --version-name 1.6 \
+  --version-code 10 --version-name 1.9 \
   --auto-add-overlay
 
 echo "==> 3/6 编译 Java"

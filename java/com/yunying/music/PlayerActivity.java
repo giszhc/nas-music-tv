@@ -30,7 +30,7 @@ import java.util.concurrent.Executors;
 public class PlayerActivity extends Activity implements PlayerService.Listener {
 
     private ImageView backdrop, coverImg;
-    private TextView title, artistLine, coverText, timeText, btnPlay, lyricTip;
+    private TextView title, artistLine, coverText, timeText, btnPlay, lyricTip, playbackStatus;
     private SeekBar seek;
     private TextView modeButton, favoriteButton, queueButton, effectButton;
     private int metadataRequest;
@@ -126,6 +126,8 @@ public class PlayerActivity extends Activity implements PlayerService.Listener {
             lyricsBox.addView(line,new LinearLayout.LayoutParams(-1,Ui.dp(this,compact?22:29))); lyricLines.add(line);
         }
         lyricTip=Ui.text(this,"",11,Ui.TEXT2,false); lyricTip.setGravity(Gravity.CENTER); info.addView(lyricTip,new LinearLayout.LayoutParams(-1,-2));
+        playbackStatus=Ui.text(this,"",12,Ui.TEXT2,false);playbackStatus.setGravity(Gravity.CENTER);
+        playbackStatus.setVisibility(View.GONE);info.addView(playbackStatus,new LinearLayout.LayoutParams(-1,-2));
         timeText=Ui.text(this,"",14,Ui.TEXT2,false);updateTimes(0,0); timeText.setGravity(Gravity.RIGHT);timeText.setTranslationY(-Ui.dp(this,10)); page.addView(timeText,new LinearLayout.LayoutParams(-1,-2));
         seek=new SeekBar(this); seek.setMax(1000); seek.setContentDescription("播放进度，左右键快进快退");
         seek.setProgressTintList(android.content.res.ColorStateList.valueOf(Ui.TEXT)); seek.setThumbTintList(android.content.res.ColorStateList.valueOf(Ui.TEXT)); seek.setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf(0x44FFFFFF));
@@ -231,6 +233,7 @@ public class PlayerActivity extends Activity implements PlayerService.Listener {
             Ui.setText(title,"未在播放");
             Ui.setText(artistLine,"");
             Ui.setText(btnPlay,"▶");
+            Ui.setText(playbackStatus,"");playbackStatus.setVisibility(View.GONE);
             return;
         }
         if(!bound){s.setListener(this);bound=true;}
@@ -245,14 +248,10 @@ public class PlayerActivity extends Activity implements PlayerService.Listener {
         }
         Ui.setText(effectButton,"音效 · "+SoundEffects.name(Config.audioEffect));
         Ui.setText(title,e == null ? "未在播放" : MusicLibrary.songTitle(this,e));
-        String from = e == null ? "" : (Entry.SRC_ALI.equals(e.source) ? "阿里云盘" : "NAS 音乐");
-        String extra = s.getError() != null && s.getError().length() > 0 ? s.getError()
-                : (s.isPreparing() ? "缓冲中" : (s.getIndex() + 1) + " / "
-                        + Math.max(1, s.getQueue().size()));
         Ui.setText(artistLine,e==null?"":MusicLibrary.artist(this,e)+" - "+MusicLibrary.album(this,e));
-        if(s.getError().length()>0)Ui.setText(lyricTip,s.getError());
-        else if(s.isPreparing())Ui.setText(lyricTip,"正在缓冲…");
-        else if(e!=null&&e.audiobook){lyricTip.setVisibility(View.VISIBLE);Ui.setText(lyricTip,"听书");}
+        String status=!s.getError().isEmpty()?s.getError():s.isPreparing()?s.getLoadingStatus():"";
+        Ui.setText(playbackStatus,status);playbackStatus.setVisibility(status.isEmpty()?View.GONE:View.VISIBLE);
+        if(e!=null&&e.audiobook){lyricTip.setVisibility(View.VISIBLE);Ui.setText(lyricTip,"听书");}
         else if(!Config.autoLyrics||Config.basicService)Ui.setText(lyricTip,"");
         Ui.setText(btnPlay,s.isPlaying() ? "❚❚" : "▶");
 
