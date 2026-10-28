@@ -64,7 +64,7 @@ public class SettingsPanel {
     private void build() {
         Config.load(act);
         FrameLayout overlay = new FrameLayout(act);
-        overlay.setBackgroundColor(Ui.BG_TOP);
+        overlay.setBackground(new ImmersiveBackground());
         overlay.setClickable(true);
         overlay.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { }
@@ -73,7 +73,7 @@ public class SettingsPanel {
 
         LinearLayout panel = new LinearLayout(act);
         panel.setOrientation(LinearLayout.VERTICAL);
-        panel.setBackgroundColor(Ui.BG_TOP);
+        panel.setBackgroundColor(android.graphics.Color.TRANSPARENT);
         panel.setPadding(pad(48), pad(34), pad(48), pad(20));
         panel.setClickable(true);
 
@@ -145,7 +145,11 @@ public class SettingsPanel {
         });}
 
 
-        String[] sections={"音乐目录","群晖 NAS"};
+        form=newPage();form.addView(section("主题外观"));
+        TextView themeTip=Ui.text(act,"选择明暗外观，立即应用并自动记住选择。",14,Ui.TEXT2,false);form.addView(themeTip);
+        form.addView(action((Ui.light?"":"当前 · ")+"深色光感玻璃",false,v->changeTheme(false)));
+        form.addView(action((Ui.light?"当前 · ":"")+"亮色光感玻璃",false,v->changeTheme(true)));
+        String[] sections={"音乐目录","群晖 NAS","主题外观"};
         for(int i=0;i<sections.length;i++) {final int index=i;TextView item=button(sections[i],Ui.PANEL,Ui.LINE,Ui.TEXT,v->selectPage(index));item.setTypeface(android.graphics.Typeface.DEFAULT);item.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX,pad(20));item.setGravity(Gravity.CENTER_VERTICAL);item.setPadding(pad(16),0,pad(16),0);item.setOnFocusChangeListener((v,focused)->{if(focused)hubDescription(index);});LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,pad(48));lp.bottomMargin=pad(8);nav.addView(item,lp);navigation.add(item);}
 
         /* ---- 状态 ---- */
@@ -167,8 +171,13 @@ public class SettingsPanel {
         LinearLayout page=new LinearLayout(act);page.setOrientation(LinearLayout.VERTICAL);page.setClipChildren(false);page.setClipToPadding(false);page.setPadding(pad(28),pad(12),pad(28),pad(40));
         pages.add(page);pageHost.addView(page,new FrameLayout.LayoutParams(-1,-2));return page;
     }
+    private void changeTheme(boolean light){
+        if(Ui.light==light)return;
+        collect();Config.lightTheme=light;Config.save(act);Ui.applyTheme(light);
+        close();act.recreate();
+    }
     public void back(){if(detail)showHub();else close();}
-    private void hubDescription(int index){String[] descriptions={"添加音乐或听书目录，管理自己的音乐资料库","连接群晖 NAS，读取服务器中的音乐目录"};hubCaption.setText(descriptions[index]);}
+    private void hubDescription(int index){String[] descriptions={"添加音乐或听书目录，管理自己的音乐资料库","连接群晖 NAS，读取服务器中的音乐目录","切换深色或亮色光感玻璃外观"};hubCaption.setText(descriptions[index]);}
     private void showHub(){detail=false;heading.setText("设置");navPane.setVisibility(View.VISIBLE);hubInfo.setVisibility(View.VISIBLE);scroller.setVisibility(View.GONE);hubDescription(currentPage);if(!navigation.isEmpty())navigation.get(currentPage).requestFocus();}
     private void selectPage(int index) {
         currentPage=index;detail=true;heading.setText(navigation.get(index).getText());navPane.setVisibility(View.GONE);hubInfo.setVisibility(View.GONE);scroller.setVisibility(View.VISIBLE);

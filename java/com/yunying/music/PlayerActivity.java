@@ -95,12 +95,12 @@ public class PlayerActivity extends Activity implements PlayerService.Listener {
     private void buildUi() {
         wide = getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE || Ui.isTv(this);
         root = new FrameLayout(this);
-        root.setBackground(Ui.gradient(Ui.BG_TOP, Ui.BG_BOT));
+        root.setBackground(new ImmersiveBackground());
         backdrop = new ImageView(this); backdrop.setScaleType(ImageView.ScaleType.CENTER_CROP);backdrop.setAlpha(1f);
         root.addView(backdrop, new FrameLayout.LayoutParams(-1,-1));
         View scrim = new View(this);
         scrim.setBackground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-            new int[]{0x77000000,0x66000000,0x66000000}));
+            Ui.light?new int[]{0xEEF2F6FC,0xE6F2F6FC,0xE6F2F6FC}:new int[]{0x77000000,0x66000000,0x66000000}));
         root.addView(scrim,new FrameLayout.LayoutParams(-1,-1));
         LinearLayout page = new LinearLayout(this); page.setOrientation(1);
         page.setPadding(Ui.dp(this,48),Ui.dp(this,32),Ui.dp(this,48),Ui.dp(this,36));
@@ -130,10 +130,11 @@ public class PlayerActivity extends Activity implements PlayerService.Listener {
         playbackStatus.setVisibility(View.GONE);info.addView(playbackStatus,new LinearLayout.LayoutParams(-1,-2));
         timeText=Ui.text(this,"",14,Ui.TEXT2,false);updateTimes(0,0); timeText.setGravity(Gravity.RIGHT);timeText.setTranslationY(-Ui.dp(this,10)); page.addView(timeText,new LinearLayout.LayoutParams(-1,-2));
         seek=new SeekBar(this); seek.setMax(1000); seek.setContentDescription("播放进度，左右键快进快退");
-        seek.setProgressTintList(android.content.res.ColorStateList.valueOf(Ui.TEXT)); seek.setThumbTintList(android.content.res.ColorStateList.valueOf(Ui.TEXT)); seek.setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf(0x44FFFFFF));
+        final int trackColor=Ui.light?0xFF899BB1:0x66FFFFFF;
+        seek.setProgressTintList(android.content.res.ColorStateList.valueOf(Ui.TEXT)); seek.setThumbTintList(android.content.res.ColorStateList.valueOf(Ui.TEXT)); seek.setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf(trackColor));
         page.addView(seek,new LinearLayout.LayoutParams(-1,Ui.dp(this,18)));
         seek.setPadding(0,0,0,0);seek.setThumb(Ui.states(Ui.round(0,this,4),Ui.round(Ui.TEXT,this,4),null));
-        android.graphics.drawable.GradientDrawable track=Ui.round(0x44FFFFFF,this,2),fill=Ui.round(Ui.TEXT,this,2);track.setSize(1,Ui.dp(this,4));fill.setSize(1,Ui.dp(this,4));android.graphics.drawable.LayerDrawable progress=new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{track,new android.graphics.drawable.ScaleDrawable(fill,Gravity.LEFT,1f,0f)});progress.setId(0,android.R.id.background);progress.setId(1,android.R.id.progress);seek.setProgressDrawable(progress);seek.setMinHeight(Ui.dp(this,4));seek.setMaxHeight(Ui.dp(this,4));
+        android.graphics.drawable.GradientDrawable track=Ui.round(trackColor,this,2),fill=Ui.round(Ui.TEXT,this,2);track.setSize(1,Ui.dp(this,4));fill.setSize(1,Ui.dp(this,4));android.graphics.drawable.LayerDrawable progress=new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{track,new android.graphics.drawable.ScaleDrawable(fill,Gravity.LEFT,1f,0f)});progress.setId(0,android.R.id.background);progress.setId(1,android.R.id.progress);seek.setProgressDrawable(progress);seek.setMinHeight(Ui.dp(this,4));seek.setMaxHeight(Ui.dp(this,4));
         seek.setOnKeyListener((view,key,event)->{if((key==KeyEvent.KEYCODE_DPAD_LEFT||key==KeyEvent.KEYCODE_DPAD_RIGHT)&&event.getAction()==KeyEvent.ACTION_DOWN){if(PlayerService.instance!=null){PlayerService.instance.seekTo(PlayerService.instance.getPosition()+(key==KeyEvent.KEYCODE_DPAD_RIGHT?5000:-5000));sync();}return true;}return false;});
         seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
             public void onProgressChanged(SeekBar bar,int progress,boolean user){ if(user&&PlayerService.instance!=null) updateTimes(PlayerService.instance.getDuration()*progress/1000,PlayerService.instance.getDuration()); }
@@ -161,6 +162,10 @@ public class PlayerActivity extends Activity implements PlayerService.Listener {
     }
     private TextView actionButton(String label,View.OnClickListener click) {
         TextView t=Ui.text(this,label,11,Ui.TEXT,false);t.setGravity(Gravity.CENTER);t.setTextColor(Ui.textStates(Ui.TEXT_ON_LIGHT,Ui.TEXT));t.setFocusable(true);t.setClickable(true);t.setBackground(Ui.states(Ui.round(0,this,8),Ui.focusRing(this,8),Ui.focusRing(this,8)));t.setOnClickListener(click);return t;
+    }
+    boolean drawGlassBackdrop(android.graphics.Canvas canvas){
+        if(backdrop==null||backdrop.getDrawable()==null)return false;
+        backdrop.draw(canvas);return true;
     }
     private void showMore() {
         new TvChoiceDialog(this,"更多操作",new String[]{
@@ -216,7 +221,7 @@ public class PlayerActivity extends Activity implements PlayerService.Listener {
         List<Entry> queue=new java.util.ArrayList<>(service.getQueue());
         TvVirtualList list=new TvVirtualList(this,queue.size(),1,76,12,(i,recycled)->LibraryActivity.songCard(this,queue.get(i),i==service.getIndex(),recycled));
         viewport.addView(list,new FrameLayout.LayoutParams(-1,-1));
-        list.right(()->closeQueue()).clicked(i->{service.playAt(i);sync();closeQueue();});
+        list.right(()->closeQueue()).clicked(i->{if(i!=service.getIndex())service.playAt(i);sync();closeQueue();});
         list.focusPosition(Math.max(0,service.getIndex()));
         if(Ui.motionEnabled(this)){viewport.setTranslationX(-Ui.dp(this,24));viewport.animate().translationX(0).setDuration(220).setInterpolator(Ui.EASE).start();queuePanel.setAlpha(0);queuePanel.animate().alpha(1).setDuration(180).start();}
     }
@@ -248,7 +253,7 @@ public class PlayerActivity extends Activity implements PlayerService.Listener {
         }
         Ui.setText(effectButton,"音效 · "+SoundEffects.name(Config.audioEffect));
         Ui.setText(title,e == null ? "未在播放" : MusicLibrary.songTitle(this,e));
-        Ui.setText(artistLine,e==null?"":MusicLibrary.artist(this,e)+" - "+MusicLibrary.album(this,e));
+        Ui.setText(artistLine,e==null?"":MusicLibrary.artist(this,e));
         String status=!s.getError().isEmpty()?s.getError():s.isPreparing()?s.getLoadingStatus():"";
         Ui.setText(playbackStatus,status);playbackStatus.setVisibility(status.isEmpty()?View.GONE:View.VISIBLE);
         if(e!=null&&e.audiobook){lyricTip.setVisibility(View.VISIBLE);Ui.setText(lyricTip,"听书");}
@@ -265,7 +270,7 @@ public class PlayerActivity extends Activity implements PlayerService.Listener {
     private void updateTimes(int pos, int dur) {
         String current=fmt(pos);
         android.text.SpannableString value=new android.text.SpannableString(current+" / "+fmt(dur));
-        value.setSpan(new android.text.style.ForegroundColorSpan(android.graphics.Color.WHITE),0,current.length(),android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        value.setSpan(new android.text.style.ForegroundColorSpan(Ui.TEXT),0,current.length(),android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         Ui.setText(timeText,value);
     }
 
@@ -305,7 +310,9 @@ public class PlayerActivity extends Activity implements PlayerService.Listener {
         io.execute(new Runnable() {
             @Override public void run() {
                 if(wantCover&&!refresh){final Bitmap cached=MusicLibrary.artwork(PlayerActivity.this,e);if(cached!=null){final Bitmap background=Ui.blur(cached);ui.post(()->{if(request!=metadataRequest||isFinishing()||isDestroyed()||PlayerService.instance==null||PlayerService.instance.current()!=e)return;cover=cached;coverImg.setImageBitmap(roundBitmap(cached,Ui.dp(PlayerActivity.this,10)));coverText.setVisibility(View.GONE);backdrop.setImageBitmap(background);backdrop.setAlpha(1f);});}}
-                OnlineMeta.Meta m = OnlineMeta.fetch(metaDir(), matchName, durationMs, refresh);
+                OnlineMeta.Meta m = MusicLibrary.hasCorrection(PlayerActivity.this,e)
+                    ? OnlineMeta.fetchCorrected(metaDir(),MusicLibrary.songTitle(PlayerActivity.this,e),MusicLibrary.correctedArtist(PlayerActivity.this,e),durationMs,refresh)
+                    : OnlineMeta.fetch(metaDir(), matchName, durationMs, refresh);
 
                 final Bitmap bmp = (wantCover && m.cover != null)
                         ? BitmapFactory.decodeByteArray(m.cover, 0, m.cover.length) : null;
@@ -394,7 +401,7 @@ public class PlayerActivity extends Activity implements PlayerService.Listener {
                 t.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
             } else {
                 boolean near = Math.abs(li - idx) == 1;
-                t.setTextColor(near ? 0xFFB8B4B0 : 0xFF8F8B86);
+                t.setTextColor(near ? Ui.TEXT2 : Ui.TEXT3);
                 t.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX,Ui.dp(this,16));
                 t.setTypeface(android.graphics.Typeface.DEFAULT);
             }

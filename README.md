@@ -1,4 +1,6 @@
-# 云影音乐 · Android 电视播放器 1.9
+# 云影音乐 · Android 电视播放器 1.9.1
+
+1.9.1：新增可记忆的深浅光感玻璃主题，默认亮色；统一弹窗、列表及菜单图标，适配摄像头区域。修复设置返回闪烁、亮色进度可读性、歌词手动匹配和当前曲目重复点击重播。
 
 当前仅支持群晖 NAS。已移除云盘登录、接口和专用播放链路；升级后自动清除旧云盘凭据，并过滤原有云盘曲目。群晖配置、曲目、收藏及元数据继续保留。
 
@@ -16,11 +18,11 @@
 
 ## 安装与使用
 
-安装 `YunYingMusic-1.9.apk`，支持同签名覆盖升级。
+安装 `YunYingMusic-1.9.1.apk`，支持同签名覆盖升级。
 
 ```bash
 adb connect <电视IP>:5555
-adb install -r YunYingMusic-1.9.apk
+adb install -r YunYingMusic-1.9.1.apk
 ```
 
 1. 启动进入音乐首页；按遥控器菜单键选择「设置」或「播放列表」。
@@ -54,7 +56,7 @@ bash build.sh
 ```bash
 YY_SCROLL_TRACKS=20 python3 test/fake_dsm.py 18080
 bash test/ui-probe/build.sh
-adb install -r YunYingMusic-1.9.apk
+adb install -r YunYingMusic-1.9.1.apk
 python3 test/tv_smoke.py
 python3 test/scroll_regression.py
 python3 test/motion_regression.py

@@ -14,7 +14,7 @@ final class TvChoiceDialog {
     TvChoiceDialog availability(boolean[] values){available=values;return this;}
     void show(){
         Dialog dialog=new Dialog(activity);dialog.requestWindowFeature(1);
-        LinearLayout panel=new LinearLayout(activity);panel.setOrientation(1);panel.setPadding(Ui.dp(activity,20),Ui.dp(activity,20),Ui.dp(activity,20),Ui.dp(activity,20));panel.setBackground(Ui.round(0xFF424345,activity,20));
+        LinearLayout panel=new LinearLayout(activity);panel.setOrientation(1);panel.setPadding(Ui.dp(activity,20),Ui.dp(activity,20),Ui.dp(activity,20),Ui.dp(activity,20));Ui.dialogGlass(activity,panel,20);
         TextView heading=Ui.text(activity,title,22,Ui.TEXT,false);heading.setGravity(Gravity.CENTER);heading.setMaxLines(2);heading.setEllipsize(android.text.TextUtils.TruncateAt.END);panel.addView(heading,new LinearLayout.LayoutParams(-1,Ui.dp(activity,54)));
         TvVirtualList list=new TvVirtualList(activity,choices.length,1,48,12,(i,recycled)->{
             LinearLayout row=new LinearLayout(activity);row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(Ui.dp(activity,12),0,Ui.dp(activity,14),0);

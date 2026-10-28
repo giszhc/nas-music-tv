@@ -56,6 +56,11 @@ final class TvVirtualList extends FrameLayout {
             if(key==KeyEvent.KEYCODE_DPAD_DOWN&&p+columns>=count&&bottom!=null){if(event.getAction()==KeyEvent.ACTION_DOWN)bottom.run();return true;}
             // 数据边界停住；禁止焦点逃到页面其他控件再从顶部进入。
             if(key==KeyEvent.KEYCODE_DPAD_DOWN&&p+columns>=count||key==KeyEvent.KEYCODE_DPAD_UP&&p<columns||key==KeyEvent.KEYCODE_DPAD_LEFT&&p%columns==0||key==KeyEvent.KEYCODE_DPAD_RIGHT&&p%columns==columns-1)return true;
+            if(event.getAction()==KeyEvent.ACTION_DOWN&&Ui.motionEnabled(context)){
+                int delta=key==KeyEvent.KEYCODE_DPAD_DOWN?columns:key==KeyEvent.KEYCODE_DPAD_UP?-columns:key==KeyEvent.KEYCODE_DPAD_RIGHT?1:key==KeyEvent.KEYCODE_DPAD_LEFT?-1:0;
+                int next=p+delta;
+                if(delta!=0&&next>=0&&next<count){grid.setSelection(next);grid.smoothScrollToPosition(next);return true;}
+            }
             return false;
         });
         refresh();
@@ -83,7 +88,7 @@ final class TvVirtualList extends FrameLayout {
         boolean animate=holder.isAttachedToWindow()&&Ui.motionEnabled(content.getContext());background.setFocus(active,animate);colors(content,active);
         content.animate().cancel();float scale=active?1.045f:1;
         // 仅变换可见卡片，左右20单位留白容纳放大；不改变行高和数据位置。
-        if(animate)content.animate().scaleX(scale).scaleY(scale).setDuration(190).setInterpolator(Ui.EASE).start();else{content.setScaleX(scale);content.setScaleY(scale);}
+        if(animate)content.animate().scaleX(scale).scaleY(scale).setDuration(250).setInterpolator(Ui.EASE).start();else{content.setScaleX(scale);content.setScaleY(scale);}
         holder.setTranslationZ(active?Ui.dp(content.getContext(),4):0);
     }
     private static void colors(View view,boolean active){

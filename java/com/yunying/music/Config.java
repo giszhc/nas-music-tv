@@ -16,6 +16,8 @@ public class Config {
     public static String nasToken = "";
     public static String nasName = "";
 
+    public static boolean lightTheme=true;
+
     /* 在线元数据 */
     public static boolean autoLyrics = true;
     public static boolean autoCover = true;
@@ -32,6 +34,7 @@ public class Config {
         SharedPreferences.Editor cleanup=p.edit();
         for(String key:p.getAll().keySet())if(key.startsWith("ali"))cleanup.remove(key);
         cleanup.apply();
+        lightTheme=p.getBoolean("lightTheme",true);
         nasHost    = p.getString("nasHost", nasHost);
         nasPort    = p.getInt("nasPort", nasPort);
         nasHttps   = p.getBoolean("nasHttps", nasHttps);
@@ -48,7 +51,7 @@ public class Config {
     }
 
     public static void save(Context c) {
-        sp(c).edit()
+        sp(c).edit().putBoolean("lightTheme",lightTheme)
                 .putBoolean("basicService",basicService).putBoolean("recommendations",recommendations).putString("audioEffect",audioEffect)
                 .putString("nasHost", nasHost).putInt("nasPort", nasPort)
                 .putBoolean("nasHttps", nasHttps)

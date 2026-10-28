@@ -130,6 +130,8 @@ public final class MusicLibrary {
         } catch (Exception ignored) { }
     }
     public static void correctMetadata(Context c,Entry e,String title,String artist){prefs(c).edit().putString(metaKey(e)+"manualTitle",title).putString(metaKey(e)+"manualArtist",artist).apply();}
+    public static boolean hasCorrection(Context c,Entry e){return prefs(c).contains(metaKey(e)+"manualTitle");}
+    public static String correctedArtist(Context c,Entry e){return prefs(c).getString(metaKey(e)+"manualArtist","");}
     public static String matchName(Context c,Entry e){
         String k=metaKey(e);if(!prefs(c).contains(k+"manualTitle"))return e.name;
         String singer=prefs(c).getString(k+"manualArtist","");return (singer.isEmpty()?"":singer+" - ")+prefs(c).getString(k+"manualTitle","")+".mp3";

@@ -32,9 +32,9 @@ public class LibraryActivity extends Activity {
     private String title(){if(moduleId!=null)return HomeModules.name(this,moduleId);if(!group.isEmpty())return group;return collection==0?"播放列表":collection==3?"我喜欢":collection==4?"最近播放":collection==8?"听书":collection==12?"收听历史":collection==9?"已购歌曲":collection==10?"已购听书":collection==6?"我的歌单 · 播放列表":collection==11?"儿童专区":tab==1?"歌手":tab==2?"专辑":"音乐";}
     private void build(){
         if(collection==11){java.util.Iterator<Entry> iterator=tracks.iterator();while(iterator.hasNext()){Entry e=iterator.next();if(!(e.path+e.name).matches(".*(儿童|儿歌|宝宝|童谣|kids).*"))iterator.remove();}}
-        root=new FrameLayout(this);root.setBackgroundColor(Ui.BG_TOP);setContentView(root);
+        root=new FrameLayout(this);root.setBackground(new ImmersiveBackground());setContentView(root);
         heading=Ui.text(this,title(),29,Ui.TEXT,false);heading.setSingleLine(true);heading.setEllipsize(android.text.TextUtils.TruncateAt.END);Ui.place(root,heading,48,40,520,44);
-        hint=Ui.text(this,collection==3?"按菜单键编辑":"更多",16,Ui.TEXT2,false);hint.setGravity(Gravity.CENTER);hint.setPadding(Ui.dp(this,12),0,Ui.dp(this,12),0);hint.setFocusable(true);hint.setClickable(true);hint.setBackground(Ui.tabBackground(this));hint.setTextColor(Ui.textStates(Ui.TEXT_ON_LIGHT,Ui.TEXT2));hint.setOnClickListener(v->menu());Ui.place(root,hint,740,43,172,40);
+        hint=new MenuHintView(this);hint.setText(collection==3?"按菜单键编辑":"更多");hint.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX,Ui.dp(this,16));hint.setGravity(Gravity.CENTER);hint.setPadding(Ui.dp(this,12),0,Ui.dp(this,12),0);hint.setFocusable(true);hint.setClickable(true);hint.setBackground(Ui.tabBackground(this));hint.setTextColor(Ui.textStates(Ui.TEXT_ON_LIGHT,Ui.TEXT2));hint.setOnClickListener(v->menu());Ui.place(root,hint,740,43,172,40);
         LinearLayout bar=new LinearLayout(this);bar.setGravity(Gravity.CENTER_VERTICAL);Ui.place(root,bar,46,98,560,44);
         for(int i=0;i<3;i++){final int index=i;TextView t=Ui.text(this,"",20,Ui.TEXT,false);t.setGravity(Gravity.CENTER);t.setPadding(Ui.dp(this,12),0,Ui.dp(this,12),0);t.setFocusable(true);t.setClickable(true);t.setTextColor(Ui.textStates(Ui.TEXT_ON_LIGHT,Ui.TEXT2));t.setBackground(Ui.tabBackground(this));t.setOnClickListener(v->{tab=index;group="";editing=false;listState=null;songList=null;render(false);t.requestFocus();});LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-2,-1);lp.rightMargin=Ui.dp(this,14);bar.addView(t,lp);tabs.add(t);}
         content=new FrameLayout(this);content.setClipChildren(true);Ui.place(root,content,0,156,960,Math.max(30,Ui.height(this)-156));Ui.installFocusMotion(root);
@@ -78,7 +78,7 @@ public class LibraryActivity extends Activity {
     }
     private static void bindSong(LinearLayout card,android.content.Context context,Entry e){
         ((TextView)card.findViewWithTag("song_title")).setText(MusicLibrary.songTitle(context,e));String ext=quality(e);
-        android.text.SpannableString formatted=new android.text.SpannableString(ext+"  "+MusicLibrary.artist(context,e)+" - "+MusicLibrary.album(context,e));formatted.setSpan(new QualitySpan("SQ".equals(ext)),0,ext.length(),android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);((TextView)card.findViewWithTag("song_meta")).setText(formatted);
+        android.text.SpannableString formatted=new android.text.SpannableString(ext+"  "+MusicLibrary.artist(context,e)+" - "+MusicLibrary.album(context,e));formatted.setSpan(new QualitySpan("SQ".equals(ext)||"MP3".equals(ext)),0,ext.length(),android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);((TextView)card.findViewWithTag("song_meta")).setText(formatted);
         ((IconTextView)card.findViewWithTag("song_playing")).bindTrack(e);
     }
     private static final class QualitySpan extends android.text.style.ReplacementSpan {
@@ -107,7 +107,7 @@ public class LibraryActivity extends Activity {
         });
         grid.up(()->tabs.get(tab).requestFocus()).clicked(i->{listState=null;songList=null;group=names.get(i);render(true);});Ui.place(content,grid,36,0,888,Math.max(30,Ui.height(this)-156));
     }
-    private void play(List<Entry> queue,int index){if(queue.isEmpty())return;PlayerService.playList(this,queue,index);Ui.open(this,new Intent(this,PlayerActivity.class));}
+    private void play(List<Entry> queue,int index){if(queue.isEmpty())return;PlayerService.selectTrack(this,queue,index);Ui.open(this,new Intent(this,PlayerActivity.class));}
     private void openPlayer(){if(PlayerService.instance==null&&!PlayerService.hasPending()){if(MusicLibrary.queue(this).isEmpty()){play(tracks,0);return;}PlayerService.restore(this);}Ui.open(this,new Intent(this,PlayerActivity.class));}
     private void menu(){
         if(moduleId!=null){HomeModules.manage(this,moduleId,()->{if(HomeModules.get(this,moduleId)==null){finish();return;}reload();render(false);});return;}

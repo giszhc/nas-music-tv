@@ -45,11 +45,17 @@ public class OnlineMeta {
 
     /** 手动重新匹配跳过旧缓存，失败时保留磁盘上的已有资源。 */
     public static Meta fetch(String cacheDir, String rawName, int durationMs, boolean refresh) {
-        Meta m = new Meta();
         String[] ta = splitName(rawName);
-        m.title = ta[0];
-        m.artist = ta[1];
-        String query = cleanForQuery(rawName);
+        return fetchFields(cacheDir,ta[0],ta[1],cleanForQuery(rawName),durationMs,refresh);
+    }
+
+    /** 手工字段不经过文件名拆分，避免连字符、下划线等被误认为分隔符。 */
+    public static Meta fetchCorrected(String cacheDir,String title,String artist,int durationMs,boolean refresh){
+        title=title==null?"":title.trim();artist=artist==null?"":artist.trim();
+        return fetchFields(cacheDir,title,artist,(artist+" "+title).trim(),durationMs,refresh);
+    }
+    private static Meta fetchFields(String cacheDir,String title,String artist,String query,int durationMs,boolean refresh){
+        Meta m = new Meta();m.title=title;m.artist=artist;
         if (query.length() == 0) query = m.title;
         if (query.trim().length() == 0) return m;
 

@@ -8,7 +8,7 @@ import android.widget.*;
 final class SongInfoDialog {
     static void show(Activity activity,Entry entry,Runnable saved){
         Dialog dialog=new Dialog(activity);dialog.requestWindowFeature(1);
-        LinearLayout panel=new LinearLayout(activity);panel.setOrientation(1);panel.setPadding(Ui.dp(activity,28),Ui.dp(activity,24),Ui.dp(activity,28),Ui.dp(activity,24));panel.setBackground(Ui.round(Ui.BG_TOP,activity,16));
+        LinearLayout panel=new LinearLayout(activity);panel.setOrientation(1);panel.setPadding(Ui.dp(activity,28),Ui.dp(activity,24),Ui.dp(activity,28),Ui.dp(activity,24));Ui.dialogGlass(activity,panel,16);
         panel.addView(Ui.text(activity,"修改歌曲信息",24,Ui.TEXT,true));
         EditText title=field(activity,panel,"歌曲名",MusicLibrary.songTitle(activity,entry));
         String singer=MusicLibrary.artist(activity,entry);EditText artist=field(activity,panel,"歌手名称","未知歌手".equals(singer)?"":singer);

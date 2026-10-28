@@ -32,7 +32,7 @@ final class SourceBrowser {
     }
     private void show() {
         dialog.requestWindowFeature(1);
-        LinearLayout panel=new LinearLayout(activity);panel.setOrientation(1);panel.setPadding(Ui.dp(activity,24),Ui.dp(activity,20),Ui.dp(activity,24),Ui.dp(activity,20));panel.setBackground(Ui.round(Ui.BG_TOP,activity,16));panel.setClipChildren(false);panel.setClipToPadding(false);
+        LinearLayout panel=new LinearLayout(activity);panel.setOrientation(1);panel.setPadding(Ui.dp(activity,24),Ui.dp(activity,20),Ui.dp(activity,24),Ui.dp(activity,20));Ui.dialogGlass(activity,panel,16);panel.setClipChildren(false);panel.setClipToPadding(false);
         LinearLayout header=new LinearLayout(activity);header.setGravity(Gravity.CENTER_VERTICAL);
         TextView title=Ui.text(activity,"添加音乐目录",23,Ui.TEXT,true);header.addView(title,new LinearLayout.LayoutParams(0,-2,1));panel.addView(header);
         LinearLayout sources=new LinearLayout(activity);sources.setPadding(0,Ui.dp(activity,14),0,Ui.dp(activity,10));sourceNas=button("群晖 NAS",v->{if(importing)return;stack.clear();load();});sources.addView(sourceNas);musicMode=button("导入音乐",v->{if(importing)return;books=false;add.setText("导入当前目录及子目录");status.setText("当前导入到播放列表");updateTabs();});bookMode=button("导入听书",v->{if(importing)return;books=true;add.setText("导入当前目录及子目录");status.setText("当前导入到听书馆");updateTabs();});sources.addView(musicMode);sources.addView(bookMode);panel.addView(sources);

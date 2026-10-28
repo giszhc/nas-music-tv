@@ -68,6 +68,21 @@ public class PlayerService extends Service {
 
     public static boolean hasPending() { return pendingQueue != null && !pendingQueue.isEmpty(); }
 
+    /** 从曲目列表进入当前歌曲只导航，不重建播放器或替换正在使用的队列。 */
+    public static void selectTrack(Context c,List<Entry> tracks,int index){
+        if(tracks.isEmpty()||index<0||index>=tracks.size())return;
+        Entry chosen=tracks.get(index);PlayerService service=instance;
+        Entry current=service==null?null:service.current();
+        if(current!=null&&service.getError().isEmpty()
+                &&MusicLibrary.key(current).equals(MusicLibrary.key(chosen))
+                &&current.audiobook==chosen.audiobook)return;
+        if(hasPending()&&pendingIndex>=0&&pendingIndex<pendingQueue.size()){
+            Entry pending=pendingQueue.get(pendingIndex);
+            if(MusicLibrary.key(pending).equals(MusicLibrary.key(chosen))&&pending.audiobook==chosen.audiobook)return;
+        }
+        playList(c,tracks,index);
+    }
+
     public static void playList(Context c, List<Entry> queue, int index) {
         pendingPosition = 0; pendingPaused = false;
         pendingQueue = new ArrayList<>(queue);

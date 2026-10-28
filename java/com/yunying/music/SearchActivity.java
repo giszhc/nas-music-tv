@@ -18,7 +18,7 @@ public final class SearchActivity extends Activity {
     private final Handler ui=new Handler();private final ExecutorService io=Executors.newSingleThreadExecutor();
     private volatile int generation;private PinyinIndex index;
     private String query="";private int mode,tab,lastRenderedMode=-1;
-    @Override public void onCreate(Bundle state){super.onCreate(state);Ui.immersive(this);catalog.addAll(MusicLibrary.read(this,"catalog"));if(catalog.isEmpty())catalog.addAll(MusicLibrary.playlist(this));root=new FrameLayout(this);root.setClipChildren(false);root.setBackgroundColor(Ui.BG_TOP);setContentView(root);buildKeyboard();Ui.installFocusMotion(keyboard);render(false);search();lastKey.requestFocus();}
+    @Override public void onCreate(Bundle state){super.onCreate(state);Ui.immersive(this);catalog.addAll(MusicLibrary.read(this,"catalog"));if(catalog.isEmpty())catalog.addAll(MusicLibrary.playlist(this));root=new FrameLayout(this);root.setClipChildren(false);root.setBackground(new ImmersiveBackground());setContentView(root);buildKeyboard();Ui.installFocusMotion(keyboard);render(false);search();lastKey.requestFocus();}
     private TextView key(String text,String kind,Runnable action){
         TextView button=kind==null?Ui.text(this,text,19,Ui.TEXT,false):new IconTextView(this,kind);button.setText(text);button.setTextColor(Ui.textStates(Ui.TEXT_ON_LIGHT,Ui.TEXT));button.setGravity(Gravity.CENTER);button.setFocusable(true);button.setClickable(true);button.setBackground(Ui.cardFocusable(this,4));if(android.os.Build.VERSION.SDK_INT>=26)button.setDefaultFocusHighlightEnabled(false);button.setOnClickListener(v->{lastKey=button;action.run();});return button;
     }
@@ -71,7 +71,7 @@ public final class SearchActivity extends Activity {
         if(tab==0||tab==4){
             List<Entry> songs=new ArrayList<>();for(Entry e:source)if(tab==0||query.isEmpty()||e.name.toLowerCase(Locale.ROOT).contains(query.toLowerCase(Locale.ROOT)))songs.add(e);
             list=new TvVirtualList(this,songs.size(),mode==2?2:1,72,12,(i,recycled)->LibraryActivity.songCard(this,songs.get(i),false,recycled));
-            list.clicked(i->{remember(query);PlayerService.playList(this,songs,i);Ui.open(this,new Intent(this,PlayerActivity.class));});
+            list.clicked(i->{remember(query);PlayerService.selectTrack(this,songs,i);Ui.open(this,new Intent(this,PlayerActivity.class));});
             if(songs.isEmpty())Ui.place(results,Ui.text(this,"没有匹配的内容",17,Ui.TEXT2,false),12,80,width-24,48);
         }else if(tab==3){
             list=new TvVirtualList(this,1,1,72,12,(i,recycled)->{

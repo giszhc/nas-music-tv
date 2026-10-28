@@ -13,24 +13,36 @@ import android.widget.TextView;
 /** 视觉规范：按 1920×1080 电视参考图缩放的深灰界面与白色焦点态。 */
 public class Ui {
 
-    public static final int BG_TOP   = 0xFF2F3034;
-    public static final int BG_BOT   = 0xFF2F3034;
-    public static final int PANEL    = 0xFF424345;
-    public static final int CARD     = 0xFF58595B;
-    public static final int CARD_HI  = 0xFFF6F6F6;   // 焦点卡片：接近白
-    public static final int LINE     = 0xFF747577;
-    public static final int TEXT     = 0xFFF4F4F4;
-    public static final int TEXT2    = 0xFFC4C4C4;
-    public static final int TEXT3    = 0xFFAFAFB0;
-    public static final int TEXT_ON_LIGHT = 0xFF101112;
-    public static final int TEXT2_ON_LIGHT = 0xFF56575A;
-    public static final int BRAND    = 0xFF3978E7;
-    public static final int BRAND_D  = 0xFF2F66C8;
-    public static final int BRAND_LT = 0xFF41434A;
-    public static final int ORANGE   = 0xFFFF9F45;
-    public static final int ON_BRAND = 0xFFFFFFFF;
-    public static final int SQ       = 0xFFE6CF92;
-    public static final int SQ_BG    = 0xFF6C624A;
+    public static int BG_TOP   = 0xFF141C29;
+    public static int BG_BOT   = 0xFF141C29;
+    public static int PANEL    = 0xE6283344;
+    public static int CARD     = 0xDC354153;
+    public static int CARD_HI  = 0xFFF6F6F6;   // 焦点卡片：接近白
+    public static int LINE     = 0x607E94AF;
+    public static int TEXT     = 0xFFF4F4F4;
+    public static int TEXT2    = 0xFFD4DEEC;
+    public static int TEXT3    = 0xFFB7C5D8;
+    public static int TEXT_ON_LIGHT = 0xFF101112;
+    public static int TEXT2_ON_LIGHT = 0xFF56575A;
+    public static int BRAND    = 0xFF82BBFF;
+    public static int BRAND_D  = 0xFF2F66C8;
+    public static int BRAND_LT = 0xFF41434A;
+    public static int ORANGE   = 0xFFFF9F45;
+    public static int ON_BRAND = 0xFFFFFFFF;
+    public static int SQ       = 0xFFE6CF92;
+    public static int SQ_BG    = 0xFF6C624A;
+
+    public static boolean light;
+    public static int themeVersion;
+    public static void applyTheme(boolean value){
+        light=value;themeVersion++;
+        BG_TOP=value?0xFFE8EEF5:0xFF141C29;BG_BOT=BG_TOP;
+        PANEL=value?0xE6F5F8FC:0xE6283344;CARD=value?0xDCF8FBFF:0xDC354153;
+        LINE=value?0x608093AC:0x607E94AF;
+        TEXT=value?0xFF152338:0xFFF4F4F4;TEXT2=value?0xFF3D5068:0xFFD4DEEC;TEXT3=value?0xFF52647A:0xFFB7C5D8;
+        BRAND=value?0xFF235EAD:0xFF82BBFF;SQ=value?0xFF715217:0xFFE6CF92;
+        SQ_BG=value?0xFFE9DFC6:0xFF6C624A;
+    }
 
     public static boolean isTv(Context c) {
         try {
@@ -44,10 +56,22 @@ public class Ui {
 
 
     public static void immersive(android.app.Activity activity) {
+        android.view.Window window=activity.getWindow();
+        window.setStatusBarColor(android.graphics.Color.TRANSPARENT);
+        window.setNavigationBarColor(android.graphics.Color.TRANSPARENT);
+        if(android.os.Build.VERSION.SDK_INT>=28){
+            android.view.WindowManager.LayoutParams attributes=window.getAttributes();
+            attributes.layoutInDisplayCutoutMode=android.os.Build.VERSION.SDK_INT>=30
+                ? android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+                : android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+            window.setAttributes(attributes);
+        }
+        if(android.os.Build.VERSION.SDK_INT>=29){window.setStatusBarContrastEnforced(false);window.setNavigationBarContrastEnforced(false);}
+
         activity.getWindow().setFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN,
             android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
         activity.getWindow().getDecorView().setSystemUiVisibility(
-            View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
     }
 
     public static int dp(Context c, float v) {
@@ -70,7 +94,7 @@ public class Ui {
 
     public static GradientDrawable round(int color, Context c, float radiusDp) {
         GradientDrawable d = new GradientDrawable();
-        d.setColor(color);
+        if(color==PANEL||color==CARD||color==BG_TOP){d.setOrientation(GradientDrawable.Orientation.TL_BR);d.setColors(new int[]{color, light?0xDDE5EDF8:(color==BG_TOP?0xF21A2332:0xED202C3E)});d.setStroke(Math.max(1,dp(c,.5f)),0x427E94AF);}else d.setColor(color);
         d.setCornerRadius(dp(c, radiusDp));
         return d;
     }
@@ -181,6 +205,27 @@ public class Ui {
         final android.widget.ImageView frost=new android.widget.ImageView(source.getContext());frost.setScaleType(android.widget.ImageView.ScaleType.FIT_XY);frost.setAlpha(0f);host.addView(frost,new android.widget.FrameLayout.LayoutParams(-1,-1));
         BLUR_WORKER.execute(()->{final android.graphics.Bitmap blurred=blur(snapshot);snapshot.recycle();frost.post(()->{if(host.getParent()==null)return;frost.setImageBitmap(blurred);if(motionEnabled(source.getContext()))frost.animate().alpha(opacity).setDuration(180).setInterpolator(EASE).start();else frost.setAlpha(opacity);});});
     }
+    /** 捕获宿主页面的对应区域，在后台模糊，叠加可读的玻璃表面。 */
+    public static void dialogGlass(android.app.Activity activity,View panel,float radius){
+        panel.setBackground(new GlassDrawable(activity,radius,false).panelSurface());
+        panel.addOnLayoutChangeListener(new View.OnLayoutChangeListener(){
+            public void onLayoutChange(View v,int l,int t,int r,int b,int ol,int ot,int or,int ob){
+                if(v.getWidth()==0||v.getHeight()==0)return;v.removeOnLayoutChangeListener(this);
+                View source=activity.getWindow().getDecorView();
+                int[] origin=new int[2],location=new int[2];source.getLocationOnScreen(origin);v.getLocationOnScreen(location);
+                final android.graphics.Bitmap capture=android.graphics.Bitmap.createBitmap(Math.max(1,v.getWidth()/8),Math.max(1,v.getHeight()/8),android.graphics.Bitmap.Config.ARGB_8888);
+                android.graphics.Canvas canvas=new android.graphics.Canvas(capture);canvas.scale(1f/8,1f/8);canvas.translate(origin[0]-location[0],origin[1]-location[1]);float originalAlpha=v.getAlpha();v.setAlpha(0);try{if(!(activity instanceof PlayerActivity)||!((PlayerActivity)activity).drawGlassBackdrop(canvas))source.draw(canvas);}finally{v.setAlpha(originalAlpha);}
+                BLUR_WORKER.execute(()->{android.graphics.Bitmap blurred=blur(capture);capture.recycle();v.post(()->{
+                    if(!v.isAttachedToWindow()||blurred==null)return;
+                    android.graphics.drawable.BitmapDrawable backdrop=new android.graphics.drawable.BitmapDrawable(activity.getResources(),blurred);backdrop.setGravity(android.view.Gravity.FILL);backdrop.setAlpha(255);
+                    GlassDrawable surface=new GlassDrawable(activity,radius,false).panelSurface();surface.setAlpha(235);
+                    v.setBackground(new android.graphics.drawable.LayerDrawable(new Drawable[]{backdrop,surface}));
+                    v.setClipToOutline(true);v.setOutlineProvider(new android.view.ViewOutlineProvider(){public void getOutline(View view,android.graphics.Outline outline){outline.setRoundRect(0,0,view.getWidth(),view.getHeight(),dp(activity,radius));}});
+                });});
+            }
+        });
+    }
+
     public static boolean focusText(View root,String label){
         if(root instanceof TextView&&label.contentEquals(((TextView)root).getText())){View candidate=root;while(!candidate.isFocusable()&&candidate.getParent()instanceof View)candidate=(View)candidate.getParent();return candidate.requestFocus();}
         if(root instanceof android.view.ViewGroup){android.view.ViewGroup group=(android.view.ViewGroup)root;for(int i=0;i<group.getChildCount();i++)if(focusText(group.getChildAt(i),label))return true;}return false;
@@ -203,8 +248,8 @@ public class Ui {
     public static void reveal(View view) {
         view.animate().cancel();
         if(!motionEnabled(view.getContext())){view.setAlpha(1);view.setTranslationY(0);return;}
-        view.setAlpha(.78f);view.setTranslationY(dp(view.getContext(),5));
-        view.animate().alpha(1).translationY(0).setDuration(240).setInterpolator(EASE).start();
+        view.setAlpha(.65f);view.setTranslationY(dp(view.getContext(),12));
+        view.animate().alpha(1).translationY(0).setDuration(300).setInterpolator(EASE).start();
     }
     public static void installFocusMotion(View root) {
         if(root instanceof TvVirtualList)return;
