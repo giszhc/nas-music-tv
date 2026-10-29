@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 使用比例留白，让前景在圆形、圆角方形等系统遮罩内完整显示。 -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:insetLeft="24%" android:insetTop="24%"
+    android:insetRight="24%" android:insetBottom="24%">
+    <bitmap android:src="@drawable/home_logo" android:gravity="fill" />
+</inset>
