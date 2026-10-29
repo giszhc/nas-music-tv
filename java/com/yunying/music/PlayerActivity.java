@@ -323,7 +323,7 @@ public class PlayerActivity extends Activity implements PlayerService.Listener {
                         Entry cur = PlayerService.instance == null ? null
                                 : PlayerService.instance.current();
                         if (cur != e || request!=metadataRequest || isFinishing() || isDestroyed()) return;
-                        MusicLibrary.metadata(PlayerActivity.this,e,m,!refresh);
+                        MusicLibrary.metadata(PlayerActivity.this,e,m);
                         rematching=false;
                         if(refresh)android.widget.Toast.makeText(PlayerActivity.this,
                             (m.hasLrc()?"歌词已更新":"未找到新歌词，保留原歌词")+"；"+(bmp!=null?"封面已更新":"未找到新封面，保留原封面"),1).show();

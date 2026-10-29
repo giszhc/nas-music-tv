@@ -1,4 +1,6 @@
-# 云影音乐 · Android 电视播放器 1.9.1
+# 云影音乐 · Android 电视播放器 2.0
+
+2.0：在线匹配仅更新歌词与封面，首次播放、列表预览及重新匹配均不覆盖歌名和歌手。
 
 1.9.1：新增可记忆的深浅光感玻璃主题，默认亮色；统一弹窗、列表及菜单图标，适配摄像头区域。修复设置返回闪烁、亮色进度可读性、歌词手动匹配和当前曲目重复点击重播。
 
@@ -24,11 +26,11 @@
 
 ## 安装与使用
 
-安装 `YunYingMusic-1.9.1.apk`，支持同签名覆盖升级。
+安装 `YunYingMusic-2.0-tv.apk`，支持同签名覆盖升级。
 
 ```bash
 adb connect <电视IP>:5555
-adb install -r YunYingMusic-1.9.1.apk
+adb install -r YunYingMusic-2.0-tv.apk
 ```
 
 1. 启动进入音乐首页；按遥控器菜单键选择「设置」或「播放列表」。
@@ -62,7 +64,7 @@ bash build.sh
 ```bash
 YY_SCROLL_TRACKS=20 python3 test/fake_dsm.py 18080
 bash test/ui-probe/build.sh
-adb install -r YunYingMusic-1.9.1.apk
+adb install -r YunYingMusic-2.0-tv.apk
 python3 test/tv_smoke.py
 python3 test/scroll_regression.py
 python3 test/motion_regression.py

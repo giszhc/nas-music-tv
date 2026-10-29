@@ -116,15 +116,10 @@ public final class MusicLibrary {
             String result=new String(out);META_KEYS.put(identity,result);return result;
         } catch(Exception ex){return Integer.toHexString(identity.hashCode());}
     }
-    public static void metadata(Context c, Entry e, OnlineMeta.Meta m) { metadata(c,e,m,true); }
-    public static void metadata(Context c, Entry e, OnlineMeta.Meta m,boolean updateNames) {
+    /** 在线匹配只缓存封面；歌曲名称信息仅由手动编辑更改。 */
+    public static void metadata(Context c, Entry e, OnlineMeta.Meta m) {
         if (m == null) return;
         String k = metaKey(e);
-        android.content.SharedPreferences.Editor editor = prefs(c).edit();
-        if (updateNames && !m.title.isEmpty()) editor.putString(k + "title", m.title);
-        if (updateNames && !m.artist.isEmpty()) editor.putString(k + "artist", m.artist);
-        if (updateNames && !m.album.isEmpty()) editor.putString(k + "album", m.album);
-        editor.apply();
         if (m.cover != null) try {
             java.io.FileOutputStream stream = new java.io.FileOutputStream(new java.io.File(c.getFilesDir(), k + ".jpg"));
             stream.write(m.cover); stream.close();

@@ -16,9 +16,13 @@ public class MetadataProbe extends Instrumentation {
    if(!MusicLibrary.songTitle(context,restored).equals("晴天.现场"))throw new AssertionError("Correction not persistent");
    if(!entry.path.equals("/fixtures/correction-only.flac")||!entry.name.startsWith("wrong"))throw new AssertionError("Source identity modified");
    Entry untouched=new Entry("原歌手 - 原歌曲.mp3",false,Entry.SRC_NAS);untouched.path="/fixtures/cover-only.mp3";
-   MusicLibrary.metadata(context,untouched,auto,false);
-   if(!MusicLibrary.songTitle(context,untouched).equals("原歌曲")||!MusicLibrary.artist(context,untouched).equals("原歌手"))throw new AssertionError("Cover rematch changed names");
-   result.putString("summary","PASS: 更正歌曲/歌手持久化、在线匹配覆盖保护、更正查询和源文件标识保持");finish(0,result);
+   MusicLibrary.metadata(context,untouched,auto);
+   MusicLibrary.metadata(context,untouched,auto);
+   if(!MusicLibrary.songTitle(context,untouched).equals("原歌曲")||!MusicLibrary.artist(context,untouched).equals("原歌手"))throw new AssertionError("Initial or repeated automatic lookup changed names");
+   Entry plain=new Entry("未播放歌曲.mp3",false,Entry.SRC_NAS);plain.path="/fixtures/never-played.mp3";
+   MusicLibrary.metadata(context,plain,auto);
+   if(!MusicLibrary.songTitle(context,plain).equals("未播放歌曲")||!MusicLibrary.artist(context,plain).equals("未知歌手"))throw new AssertionError("Automatic lookup invented song identity");
+   result.putString("summary","PASS: 更正歌曲/歌手持久化、在线匹配覆盖保护、更正查询、首次与重复匹配名称保持和源文件标识保持");finish(0,result);
   }catch(Throwable ex){result.putString("error",ex.toString());finish(1,result);}
   finally{android.content.SharedPreferences.Editor editor=prefs.edit();for(String key:prefs.getAll().keySet())if(!before.contains(key))editor.remove(key);editor.commit();}
  }
