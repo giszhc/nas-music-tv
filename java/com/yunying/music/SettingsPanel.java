@@ -36,6 +36,11 @@ public class SettingsPanel {
 
     private EditText nasHost, nasPort, nasUser, nasPass;
     private CheckBox nasHttps;
+    private LinearLayout nasLoginForm,nasAccount;
+    private TextView nasNickname,nasInitial,loginNas;
+    private boolean nasBusy,themeChanged,scanRunning;
+    private int scanGeneration;private java.util.concurrent.Future<?> scanTask;
+    private LinearLayout discoveredNas;private TextView scanStatus;
     private TextView status;
     private LinearLayout moduleRows;
 
@@ -116,27 +121,32 @@ public class SettingsPanel {
         hubIcon=new ServiceSettingsActivity.ServiceMark(act);hubInfo.addView(hubIcon,new LinearLayout.LayoutParams(pad(Ui.height(act)<440?100:160),pad(Ui.height(act)<440?100:160)));
         hubCaption=Ui.text(act,"",14,Ui.TEXT2,false);hubCaption.setGravity(Gravity.CENTER);hubCaption.setPadding(0,pad(28),0,0);hubInfo.addView(hubCaption,new LinearLayout.LayoutParams(-1,-2));
         LinearLayout form=newPage();
-        form.addView(section("音乐目录"));
-        TextView manage = action("添加音乐目录", true, v -> {collect();SourceBrowser.show(act, () -> status.setText("播放列表已更新，按返回键回到首页即可播放"));});
-        form.addView(manage);
-        form.addView(action("自定义首页页签",false,v->{collect();HomeModules.show(act,()->{refreshModules();status.setText("首页页签已更新，按返回键回到首页即可查看");});}));
+        TextView directoryIntro=Ui.text(act,"从群晖导入音乐，或为首页页签管理独立内容",14,Ui.TEXT2,false);directoryIntro.setPadding(0,0,0,pad(20));form.addView(directoryIntro);
+        form.addView(directoryAction("添加音乐目录","浏览群晖文件夹 · 支持导入音乐与听书",v->{collect();SourceBrowser.show(act,()->status.setText("播放列表已更新"));}));
+        form.addView(directoryAction("导入本地目录","选择设备或外接存储中的文件夹，导入到播放列表",v->{collect();act.startActivity(new android.content.Intent(act,LocalImportActivity.class));}));
+        TextView tabsHeading=Ui.text(act,"首页页签",20,Ui.TEXT,true);tabsHeading.setPadding(0,pad(24),0,pad(12));form.addView(tabsHeading);
+        form.addView(directoryAction("自定义首页页签","创建、重命名与排序；“我的”为固定页签",v->{collect();HomeModules.show(act,()->{refreshModules();status.setText("首页页签已更新");});}));
         moduleRows=new LinearLayout(act);moduleRows.setOrientation(1);form.addView(moduleRows);refreshModules();
-        TextView tabTip=Ui.text(act,"“我的”为固定页签，其余页签可创建、重命名、排序，并导入各自的音乐目录。",12,Ui.TEXT2,false);
-        tabTip.setPadding(0,pad(12),0,pad(12));form.addView(tabTip);
-        TextView libraryTip = Ui.text(act,"配置连接后，在目录中选择歌曲添加到首页播放列表。",12,Ui.TEXT2,false);
-        libraryTip.setPadding(0,pad(18),0,pad(24));form.addView(libraryTip);
-        form.addView(Ui.text(act,"先连接音乐源，再选择目录",18,Ui.TEXT,true));
-        TextView guide=Ui.text(act,"群晖 NAS：填写服务器和账号，保存连接配置。\n音乐与听书分别保存，已有内容会自动跳过。",14,Ui.TEXT2,false);guide.setLineSpacing(pad(10),1);guide.setPadding(0,pad(14),0,0);form.addView(guide);
+        TextView importTip=Ui.text(act,"导入包含所有子目录，已有内容自动跳过。移除页签或清空内容不会删除群晖源文件。",13,Ui.TEXT2,false);importTip.setPadding(0,pad(16),0,0);importTip.setLineSpacing(pad(4),1);form.addView(importTip);
 
         /* ---- 群晖 NAS ---- */
         form=newPage();
-        form.addView(section("群晖 NAS"));
+        LinearLayout nasPage=form;
+        nasAccount=new LinearLayout(act);nasAccount.setOrientation(1);nasAccount.setGravity(Gravity.CENTER_HORIZONTAL);nasAccount.setPadding(pad(28),pad(32),pad(28),pad(32));nasAccount.setBackground(Ui.glass(act,16));nasPage.addView(nasAccount);
+        LinearLayout identity=new LinearLayout(act);identity.setGravity(Gravity.CENTER_VERTICAL);nasAccount.addView(identity,new LinearLayout.LayoutParams(-2,-2));
+        nasInitial=Ui.text(act,"",28,Ui.TEXT,true);nasInitial.setGravity(Gravity.CENTER);nasInitial.setBackground(Ui.glass(act,32));identity.addView(nasInitial,new LinearLayout.LayoutParams(pad(64),pad(64)));
+        nasNickname=Ui.text(act,"",24,Ui.TEXT,true);nasNickname.setSingleLine(true);nasNickname.setEllipsize(android.text.TextUtils.TruncateAt.END);nasNickname.setMaxWidth(pad(360));LinearLayout.LayoutParams nameLp=new LinearLayout.LayoutParams(-2,-2);nameLp.leftMargin=pad(18);identity.addView(nasNickname,nameLp);
+        TextView logout=action("退出登录",false,v->logoutNas());logout.setGravity(Gravity.CENTER);LinearLayout.LayoutParams logoutLp=new LinearLayout.LayoutParams(-2,pad(48));logoutLp.topMargin=pad(28);logoutLp.gravity=Gravity.CENTER_HORIZONTAL;nasAccount.addView(logout,logoutLp);
+        nasLoginForm=new LinearLayout(act);nasLoginForm.setOrientation(1);nasPage.addView(nasLoginForm);form=nasLoginForm;
+        scanStatus=Ui.text(act,"进入此页自动发现局域网群晖",14,Ui.TEXT2,false);scanStatus.setPadding(0,0,0,pad(10));form.addView(scanStatus);
+        form.addView(action("重新扫描",false,v->scanNas()));
+        discoveredNas=new LinearLayout(act);discoveredNas.setOrientation(1);form.addView(discoveredNas);
         EditText[] server=pair(form,"地址 / IP",Config.nasHost,false,"端口",String.valueOf(Config.nasPort),true);
         nasHost=server[0];nasPort=server[1];
         nasHttps=check(form,"使用 HTTPS",Config.nasHttps);
         EditText[] account=pair(form,"账号",Config.nasUser,false,"密码",Config.nasPass,false);
         nasUser=account[0];nasPass=account[1];nasPass.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);nasPass.setTransformationMethod(android.text.method.PasswordTransformationMethod.getInstance());
-        TextView saveNas=action("保存",true,v->{collect();Config.nasSid="";Config.nasToken="";Config.save(act);status.setText("NAS 配置已保存");});form.addView(saveNas);
+        TextView saveNas=action("登录",true,v->testNas());loginNas=saveNas;form.addView(saveNas);
         View[] nasFields={nasHost,nasPort,nasHttps,nasUser,nasPass,saveNas};
         for(int at=0;at<nasFields.length;at++){final int position=at;View field=nasFields[at];field.setId(View.generateViewId());field.setOnKeyListener((v,key,event)->{
             if(key!=android.view.KeyEvent.KEYCODE_DPAD_UP&&key!=android.view.KeyEvent.KEYCODE_DPAD_DOWN)return false;
@@ -145,10 +155,23 @@ public class SettingsPanel {
         });}
 
 
-        form=newPage();form.addView(section("主题外观"));
-        TextView themeTip=Ui.text(act,"选择明暗外观，立即应用并自动记住选择。",14,Ui.TEXT2,false);form.addView(themeTip);
-        form.addView(action((Ui.light?"":"当前 · ")+"深色光感玻璃",false,v->changeTheme(false)));
-        form.addView(action((Ui.light?"当前 · ":"")+"亮色光感玻璃",false,v->changeTheme(true)));
+        refreshNasAccount();
+        form=newPage();
+        TextView themeTip=Ui.text(act,"选择喜欢的外观，立即应用并自动保存",14,Ui.TEXT2,false);themeTip.setPadding(0,0,0,pad(20));form.addView(themeTip);
+        LinearLayout themes=new LinearLayout(act);themes.setClipChildren(false);themes.setClipToPadding(false);form.addView(themes,new LinearLayout.LayoutParams(-1,-2));
+        for(int index=0;index<2;index++){
+            final boolean light=index==1;final boolean enabled=Ui.light==light;
+            LinearLayout card=new LinearLayout(act);card.setOrientation(1);card.setPadding(pad(12),pad(12),pad(12),pad(16));card.setBackground(Ui.cardFocusable(act,16));card.setFocusable(true);card.setClickable(true);card.setOnClickListener(v->changeTheme(light));card.setContentDescription((light?"亮色光感玻璃":"深色光感玻璃")+(enabled?"，已启用":""));
+            LinearLayout.LayoutParams cardLp=new LinearLayout.LayoutParams(0,-2,1);if(index==0)cardLp.rightMargin=pad(18);themes.addView(card,cardLp);
+            card.addView(new ThemePreviewView(act,light),new LinearLayout.LayoutParams(-1,pad(188)));
+            TextView name=Ui.text(act,light?"亮色光感玻璃":"深色光感玻璃",18,Ui.TEXT,true);name.setPadding(pad(4),pad(16),0,pad(6));card.addView(name);
+            LinearLayout stateRow=new LinearLayout(act);stateRow.setGravity(Gravity.CENTER_VERTICAL);stateRow.setPadding(pad(4),0,0,0);card.addView(stateRow,new LinearLayout.LayoutParams(-1,pad(28)));
+            View check=new View(act){final android.graphics.Paint paint=new android.graphics.Paint(3);protected void onDraw(android.graphics.Canvas canvas){if(!enabled)return;paint.setColor(Ui.BRAND);paint.setStyle(android.graphics.Paint.Style.STROKE);paint.setStrokeWidth(pad(2));paint.setStrokeCap(android.graphics.Paint.Cap.ROUND);paint.setStrokeJoin(android.graphics.Paint.Join.ROUND);android.graphics.Path path=new android.graphics.Path();path.moveTo(getWidth()*.15f,getHeight()*.5f);path.lineTo(getWidth()*.4f,getHeight()*.72f);path.lineTo(getWidth()*.85f,getHeight()*.25f);canvas.drawPath(path,paint);}};
+            if(enabled){LinearLayout.LayoutParams checkLp=new LinearLayout.LayoutParams(pad(18),pad(18));checkLp.rightMargin=pad(8);stateRow.addView(check,checkLp);}
+            TextView state=Ui.text(act,enabled?"当前使用":"选择此主题",14,enabled?Ui.BRAND:Ui.TEXT2,enabled);stateRow.addView(state);
+            card.setOnFocusChangeListener((v,focused)->{name.setTextColor(focused?Ui.TEXT_ON_LIGHT:Ui.TEXT);state.setTextColor(focused?Ui.TEXT2_ON_LIGHT:enabled?Ui.BRAND:Ui.TEXT2);});
+
+        }
         String[] sections={"音乐目录","群晖 NAS","主题外观"};
         for(int i=0;i<sections.length;i++) {final int index=i;TextView item=button(sections[i],Ui.PANEL,Ui.LINE,Ui.TEXT,v->selectPage(index));item.setTypeface(android.graphics.Typeface.DEFAULT);item.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX,pad(20));item.setGravity(Gravity.CENTER_VERTICAL);item.setPadding(pad(16),0,pad(16),0);item.setOnFocusChangeListener((v,focused)->{if(focused)hubDescription(index);});LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,pad(48));lp.bottomMargin=pad(8);nav.addView(item,lp);navigation.add(item);}
 
@@ -174,15 +197,17 @@ public class SettingsPanel {
     private void changeTheme(boolean light){
         if(Ui.light==light)return;
         collect();Config.lightTheme=light;Config.save(act);Ui.applyTheme(light);
-        close();act.recreate();
+        themeChanged=true;cancelScan();ui.removeCallbacksAndMessages(null);host.removeView(root);pages.clear();navigation.clear();build();selectPage(2);
     }
     public void back(){if(detail)showHub();else close();}
     private void hubDescription(int index){String[] descriptions={"添加音乐或听书目录，管理自己的音乐资料库","连接群晖 NAS，读取服务器中的音乐目录","切换深色或亮色光感玻璃外观"};hubCaption.setText(descriptions[index]);}
-    private void showHub(){detail=false;heading.setText("设置");navPane.setVisibility(View.VISIBLE);hubInfo.setVisibility(View.VISIBLE);scroller.setVisibility(View.GONE);hubDescription(currentPage);if(!navigation.isEmpty())navigation.get(currentPage).requestFocus();}
+    private void showHub(){cancelScan();detail=false;heading.setText("设置");navPane.setVisibility(View.VISIBLE);hubInfo.setVisibility(View.VISIBLE);scroller.setVisibility(View.GONE);hubDescription(currentPage);if(!navigation.isEmpty())navigation.get(currentPage).requestFocus();}
     private void selectPage(int index) {
+        if(index!=1)cancelScan();
         currentPage=index;detail=true;heading.setText(navigation.get(index).getText());navPane.setVisibility(View.GONE);hubInfo.setVisibility(View.GONE);scroller.setVisibility(View.VISIBLE);
         for(int i=0;i<pages.size();i++)pages.get(i).setVisibility(i==index?View.VISIBLE:View.GONE);
         for(int i=0;i<navigation.size();i++){TextView item=navigation.get(i);item.setSelected(i==index);item.setTextColor(Ui.textStates(Ui.TEXT_ON_LIGHT,i==index?Ui.TEXT:Ui.TEXT2));}
+        if(index==1&&Config.nasSid.isEmpty())scanNas();
         scroller.scrollTo(0,0);Ui.reveal(pages.get(index));pages.get(index).post(()->{java.util.ArrayList<View> focusables=new java.util.ArrayList<>();pages.get(index).addFocusables(focusables,View.FOCUS_FORWARD);if(!focusables.isEmpty())focusables.get(0).requestFocus();});
     }
     private EditText[] pair(LinearLayout parent,String left,String leftValue,boolean leftNumber,String right,String rightValue,boolean rightNumber) {
@@ -192,9 +217,16 @@ public class SettingsPanel {
         return new EditText[]{field(a,left,leftValue,false,leftNumber),field(b,right,rightValue,false,rightNumber)};
     }
 
+    private View directoryAction(String title,String description,View.OnClickListener click){
+        LinearLayout row=new LinearLayout(act);row.setOrientation(1);row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(pad(20),pad(14),pad(20),pad(14));row.setFocusable(true);row.setClickable(true);row.setBackground(Ui.cardFocusable(act,14));row.setOnClickListener(click);
+        TextView name=Ui.text(act,title,18,Ui.TEXT,true);row.addView(name);
+        TextView caption=Ui.text(act,description,13,Ui.TEXT2,false);caption.setPadding(0,pad(6),0,0);caption.setMaxLines(2);row.addView(caption);
+        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.bottomMargin=pad(10);row.setLayoutParams(lp);
+        row.setOnFocusChangeListener((v,focused)->{name.setTextColor(focused?Ui.TEXT_ON_LIGHT:Ui.TEXT);caption.setTextColor(focused?Ui.TEXT2_ON_LIGHT:Ui.TEXT2);});return row;
+    }
     private void refreshModules(){
         if(moduleRows==null)return;moduleRows.removeAllViews();
-        for(HomeModules.Module module:HomeModules.all(act))moduleRows.addView(action(module.name+" · "+HomeModules.entries(act,module.id).size()+" 首",false,v->HomeModules.manage(act,module.id,()->{refreshModules();Ui.installFocusMotion(moduleRows);} )));
+        for(HomeModules.Module module:HomeModules.all(act))moduleRows.addView(directoryAction(module.name+" · "+HomeModules.entries(act,module.id).size()+" 首","导入专属目录、排序或管理内容",v->HomeModules.manage(act,module.id,()->{refreshModules();Ui.installFocusMotion(moduleRows);} )));
         Ui.installFocusMotion(moduleRows);
     }
     private int pad(int dp) { return Ui.dp(act, dp); }
@@ -279,26 +311,36 @@ public class SettingsPanel {
         Config.save(act);
     }
 
-    private void testNas() {
-        collect();
-        status.setText("正在连接 NAS…");
-        io.execute(new Runnable() {
-            @Override public void run() {
-                String msg;
-                try {
-                    Synology.login();
-                    Config.save(act);
-                    List<Entry> shares = Synology.listShares();
-                    msg = "NAS 连接成功：" + (Config.nasName.length() > 0 ? Config.nasName + " · " : "")
-                            + shares.size() + " 个共享文件夹";
-                } catch (Exception e) {
-                    msg = "NAS 连接失败：" + (e.getMessage() == null ? "未知错误" : e.getMessage());
-                }
-                final String m = msg;
-                ui.post(new Runnable() {
-                    @Override public void run() { status.setText(m); }
-                });
-            }
+    private void cancelScan(){scanGeneration++;if(scanTask!=null)scanTask.cancel(true);scanTask=null;scanRunning=false;}
+    private void scanNas(){
+        if(scanRunning||closed||!Config.nasSid.isEmpty())return;
+        final int ticket=++scanGeneration;scanRunning=true;discoveredNas.removeAllViews();scanStatus.setText("正在扫描当前局域网（DSM 5000 / 5001）…");
+        scanTask=io.submit(()->{String error=null;try{NasDiscovery.scan(act,(host,port,https)->ui.post(()->{
+            if(closed||ticket!=scanGeneration)return;
+            discoveredNas.addView(action(host+":"+port,false,v->{nasHost.setText(host);nasPort.setText(String.valueOf(port));nasHttps.setChecked(https);scanStatus.setText("已选择设备，请填写账号密码登录");nasUser.requestFocus();}));
+        }));}catch(InterruptedException ex){Thread.currentThread().interrupt();return;}catch(Exception ex){error=ex.getMessage();}
+        final String message=error;ui.post(()->{if(closed||ticket!=scanGeneration)return;scanRunning=false;scanStatus.setText(message!=null?message+"，可手动填写地址":discoveredNas.getChildCount()==0?"未发现群晖，可重新扫描或手动填写地址":"发现 "+discoveredNas.getChildCount()+" 台设备，选择后登录");});});
+    }
+    private void refreshNasAccount(){
+        boolean signedIn=!Config.nasSid.isEmpty()&&!Config.nasLoggedOut;
+        nasAccount.setVisibility(signedIn?View.VISIBLE:View.GONE);nasLoginForm.setVisibility(signedIn?View.GONE:View.VISIBLE);
+        String name=Config.nasUser;nasNickname.setText(name);nasInitial.setText(name.isEmpty()?"NAS":name.substring(0,name.offsetByCodePoints(0,1)).toUpperCase(java.util.Locale.ROOT));
+    }
+    private void logoutNas(){
+        if(nasBusy)return;
+        Config.nasLoggedOut=true;Config.nasSid="";Config.nasToken="";Config.nasPass="";nasPass.setText("");Config.save(act);
+        if(PlayerService.instance!=null)PlayerService.command(act,PlayerService.ACTION_STOP,-1);
+        refreshNasAccount();status.setText("已退出登录");nasHost.requestFocus();scanNas();
+    }
+    private void testNas(){
+        if(nasBusy)return;cancelScan();collect();nasBusy=true;loginNas.setEnabled(false);status.setText("正在登录群晖 NAS…");
+        Config.nasLoggedOut=false;Config.nasSid="";Config.nasToken="";
+        io.execute(()->{
+            String message;
+            try{Synology.login();Config.save(act);message="";}
+            catch(Exception ex){Config.nasSid="";Config.nasToken="";Config.nasLoggedOut=true;Config.save(act);message="登录失败："+ex.getMessage();}
+            final String text=message;
+            ui.post(()->{nasBusy=false;if(closed)return;loginNas.setEnabled(true);refreshNasAccount();status.setText(text);if(!Config.nasSid.isEmpty())Ui.focusText(nasAccount,"退出登录");});
         });
     }
 
@@ -306,12 +348,12 @@ public class SettingsPanel {
 
     public void close() {
         if (closed) return;
-        closed = true;
+        closed = true;cancelScan();
         ui.removeCallbacksAndMessages(null);
         collect();
         try { io.shutdownNow(); } catch (Throwable ignored) { }
         final View closing=root;root=null;
-        Runnable finish=()->{if(closing!=null&&closing.getParent()instanceof ViewGroup)((ViewGroup)closing.getParent()).removeView(closing);if(onClose!=null)onClose.run();};
+        Runnable finish=()->{if(closing!=null&&closing.getParent()instanceof ViewGroup)((ViewGroup)closing.getParent()).removeView(closing);if(themeChanged&&!act.isFinishing())act.recreate();else if(onClose!=null)onClose.run();};
         if(closing!=null&&Ui.motionEnabled(act))closing.animate().alpha(0).setDuration(160).withEndAction(finish).start();else finish.run();
     }
 }

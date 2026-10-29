@@ -4,6 +4,7 @@ package com.yunying.music;
 public class Entry {
 
     public static final String SRC_NAS = "nas";
+    public static final String SRC_LOCAL="local";
 
     public String name = "";
     public String path = "";     // NAS 绝对路径

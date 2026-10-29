@@ -58,6 +58,8 @@
         <activity android:name=".MusicHomeActivity" android:exported="false" android:screenOrientation="landscape" />
         <activity android:name=".ServiceSettingsActivity" android:exported="false" android:screenOrientation="landscape" />
 
+        <activity android:name=".LocalImportActivity" android:exported="false" android:screenOrientation="landscape" />
+
         <service
             android:name=".PlayerService"
             android:exported="false"

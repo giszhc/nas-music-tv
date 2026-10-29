@@ -100,7 +100,7 @@ public class PlayerActivity extends Activity implements PlayerService.Listener {
         root.addView(backdrop, new FrameLayout.LayoutParams(-1,-1));
         View scrim = new View(this);
         scrim.setBackground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-            Ui.light?new int[]{0xEEF2F6FC,0xE6F2F6FC,0xE6F2F6FC}:new int[]{0x77000000,0x66000000,0x66000000}));
+            Ui.light?new int[]{0x88F2F6FC,0xB0F2F6FC,0xA0F2F6FC}:new int[]{0x55000000,0x66000000,0x55000000}));
         root.addView(scrim,new FrameLayout.LayoutParams(-1,-1));
         LinearLayout page = new LinearLayout(this); page.setOrientation(1);
         page.setPadding(Ui.dp(this,48),Ui.dp(this,32),Ui.dp(this,48),Ui.dp(this,36));
@@ -162,10 +162,6 @@ public class PlayerActivity extends Activity implements PlayerService.Listener {
     }
     private TextView actionButton(String label,View.OnClickListener click) {
         TextView t=Ui.text(this,label,11,Ui.TEXT,false);t.setGravity(Gravity.CENTER);t.setTextColor(Ui.textStates(Ui.TEXT_ON_LIGHT,Ui.TEXT));t.setFocusable(true);t.setClickable(true);t.setBackground(Ui.states(Ui.round(0,this,8),Ui.focusRing(this,8),Ui.focusRing(this,8)));t.setOnClickListener(click);return t;
-    }
-    boolean drawGlassBackdrop(android.graphics.Canvas canvas){
-        if(backdrop==null||backdrop.getDrawable()==null)return false;
-        backdrop.draw(canvas);return true;
     }
     private void showMore() {
         new TvChoiceDialog(this,"更多操作",new String[]{
@@ -305,11 +301,11 @@ public class PlayerActivity extends Activity implements PlayerService.Listener {
 
         final boolean wantLrc = (refresh||Config.autoLyrics)&&!Config.basicService&&!MusicLibrary.isBook(this,e);
         final boolean wantCover = (refresh||Config.autoCover)&&!Config.basicService&&!MusicLibrary.isBook(this,e);
-        if (!wantLrc && !wantCover) return;
 
         io.execute(new Runnable() {
             @Override public void run() {
-                if(wantCover&&!refresh){final Bitmap cached=MusicLibrary.artwork(PlayerActivity.this,e);if(cached!=null){final Bitmap background=Ui.blur(cached);ui.post(()->{if(request!=metadataRequest||isFinishing()||isDestroyed()||PlayerService.instance==null||PlayerService.instance.current()!=e)return;cover=cached;coverImg.setImageBitmap(roundBitmap(cached,Ui.dp(PlayerActivity.this,10)));coverText.setVisibility(View.GONE);backdrop.setImageBitmap(background);backdrop.setAlpha(1f);});}}
+                if(!refresh){final Bitmap cached=MusicLibrary.artwork(PlayerActivity.this,e);if(cached!=null){final Bitmap background=Ui.blur(cached);ui.post(()->{if(request!=metadataRequest||isFinishing()||isDestroyed()||PlayerService.instance==null||PlayerService.instance.current()!=e)return;cover=cached;coverImg.setImageBitmap(roundBitmap(cached,Ui.dp(PlayerActivity.this,10)));coverText.setVisibility(View.GONE);backdrop.setImageBitmap(background);backdrop.setAlpha(1f);});}}
+                if(!wantLrc&&!wantCover)return;
                 OnlineMeta.Meta m = MusicLibrary.hasCorrection(PlayerActivity.this,e)
                     ? OnlineMeta.fetchCorrected(metaDir(),MusicLibrary.songTitle(PlayerActivity.this,e),MusicLibrary.correctedArtist(PlayerActivity.this,e),durationMs,refresh)
                     : OnlineMeta.fetch(metaDir(), matchName, durationMs, refresh);
@@ -327,7 +323,7 @@ public class PlayerActivity extends Activity implements PlayerService.Listener {
                         Entry cur = PlayerService.instance == null ? null
                                 : PlayerService.instance.current();
                         if (cur != e || request!=metadataRequest || isFinishing() || isDestroyed()) return;
-                        MusicLibrary.metadata(PlayerActivity.this,e,m);
+                        MusicLibrary.metadata(PlayerActivity.this,e,m,!refresh);
                         rematching=false;
                         if(refresh)android.widget.Toast.makeText(PlayerActivity.this,
                             (m.hasLrc()?"歌词已更新":"未找到新歌词，保留原歌词")+"；"+(bmp!=null?"封面已更新":"未找到新封面，保留原封面"),1).show();

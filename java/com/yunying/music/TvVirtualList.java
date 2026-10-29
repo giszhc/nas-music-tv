@@ -56,12 +56,13 @@ final class TvVirtualList extends FrameLayout {
             if(key==KeyEvent.KEYCODE_DPAD_DOWN&&p+columns>=count&&bottom!=null){if(event.getAction()==KeyEvent.ACTION_DOWN)bottom.run();return true;}
             // 数据边界停住；禁止焦点逃到页面其他控件再从顶部进入。
             if(key==KeyEvent.KEYCODE_DPAD_DOWN&&p+columns>=count||key==KeyEvent.KEYCODE_DPAD_UP&&p<columns||key==KeyEvent.KEYCODE_DPAD_LEFT&&p%columns==0||key==KeyEvent.KEYCODE_DPAD_RIGHT&&p%columns==columns-1)return true;
-            if(event.getAction()==KeyEvent.ACTION_DOWN&&Ui.motionEnabled(context)){
-                int delta=key==KeyEvent.KEYCODE_DPAD_DOWN?columns:key==KeyEvent.KEYCODE_DPAD_UP?-columns:key==KeyEvent.KEYCODE_DPAD_RIGHT?1:key==KeyEvent.KEYCODE_DPAD_LEFT?-1:0;
-                int next=p+delta;
-                if(delta!=0&&next>=0&&next<count){grid.setSelection(next);grid.smoothScrollToPosition(next);return true;}
-            }
             return false;
+        });
+        grid.setRecyclerListener(view->{
+            if(!(view instanceof FrameLayout))return;
+            FrameLayout holder=(FrameLayout)view;
+            holder.setTag(R.id.virtual_row_active,null);holder.setTranslationZ(0);
+            if(holder.getChildCount()>0){View content=holder.getChildAt(0);content.animate().cancel();content.setScaleX(1);content.setScaleY(1);if(content.getBackground() instanceof GlassDrawable)((GlassDrawable)content.getBackground()).setFocus(false,false);colors(content,false);}
         });
         refresh();
     }
@@ -82,10 +83,10 @@ final class TvVirtualList extends FrameLayout {
     }
     private static void blockFocus(View view){view.setFocusable(false);view.setClickable(false);if(view instanceof ViewGroup){ViewGroup group=(ViewGroup)view;for(int i=0;i<group.getChildCount();i++)blockFocus(group.getChildAt(i));}}
     private static void paint(FrameLayout holder,boolean active){
-        if(holder.getChildCount()==0)return;Object prior=holder.getTag(R.id.virtual_row_active);if(prior instanceof Boolean&&(Boolean)prior==active)return;holder.setTag(R.id.virtual_row_active,active);
+        if(holder.getChildCount()==0)return;Object prior=holder.getTag(R.id.virtual_row_active);if(active&&prior instanceof Boolean&&(Boolean)prior)return;holder.setTag(R.id.virtual_row_active,active);
         View content=holder.getChildAt(0);GlassDrawable background;
         if(content.getBackground()instanceof GlassDrawable)background=(GlassDrawable)content.getBackground();else{background=new GlassDrawable(content.getContext(),12,true);content.setBackground(background);}
-        boolean animate=holder.isAttachedToWindow()&&Ui.motionEnabled(content.getContext());background.setFocus(active,animate);colors(content,active);
+        boolean animate=active&&holder.isAttachedToWindow()&&Ui.motionEnabled(content.getContext());background.setFocus(active,animate);colors(content,active);
         content.animate().cancel();float scale=active?1.045f:1;
         // 仅变换可见卡片，左右20单位留白容纳放大；不改变行高和数据位置。
         if(animate)content.animate().scaleX(scale).scaleY(scale).setDuration(250).setInterpolator(Ui.EASE).start();else{content.setScaleX(scale);content.setScaleY(scale);}

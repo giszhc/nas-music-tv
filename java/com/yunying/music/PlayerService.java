@@ -224,8 +224,8 @@ public class PlayerService extends Service {
                     if (request != generation) return;
                     final String url;
                     final Map<String, String> headers;
-                    url = Synology.downloadUrl(e.path);
-                    headers = Synology.playHeaders();
+                    url = Entry.SRC_LOCAL.equals(e.source)?e.path:Synology.downloadUrl(e.path);
+                    headers = Entry.SRC_LOCAL.equals(e.source)?new java.util.HashMap<>():Synology.playHeaders();
                     ui.post(()->{if(request==generation){
                         stage(request,"正在加载音频…",20000);startPlayer(url,headers,request);
                     }});

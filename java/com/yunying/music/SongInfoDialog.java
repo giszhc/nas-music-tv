@@ -14,13 +14,13 @@ final class SongInfoDialog {
         String singer=MusicLibrary.artist(activity,entry);EditText artist=field(activity,panel,"歌手名称","未知歌手".equals(singer)?"":singer);
         panel.addView(Ui.text(activity,"保存后使用更正的信息重新匹配歌词与封面",13,Ui.TEXT2,false));
         TextView error=Ui.text(activity,"",13,Ui.TEXT2,false);panel.addView(error);
-        LinearLayout actions=new LinearLayout(activity);actions.setClipChildren(false);panel.addView(actions);
+        LinearLayout actions=new LinearLayout(activity);actions.setGravity(Gravity.CENTER_VERTICAL);actions.setClipChildren(false);actions.setClipToPadding(false);actions.setPadding(Ui.dp(activity,8),Ui.dp(activity,8),Ui.dp(activity,8),Ui.dp(activity,8));LinearLayout.LayoutParams actionsLp=new LinearLayout.LayoutParams(-1,-2);actionsLp.topMargin=Ui.dp(activity,16);panel.addView(actions,actionsLp);
         TextView cancel=Ui.action(activity,"取消",18,v->dialog.dismiss());
         TextView save=Ui.action(activity,"保存并重新匹配",18,v->{
             String name=title.getText().toString().trim();if(name.isEmpty()){error.setText("请输入歌曲名");title.requestFocus();return;}
             MusicLibrary.correctMetadata(activity,entry,name,artist.getText().toString().trim());dialog.dismiss();saved.run();
         });
-        actions.addView(cancel,new LinearLayout.LayoutParams(0,Ui.dp(activity,52),1));actions.addView(save,new LinearLayout.LayoutParams(0,Ui.dp(activity,52),1));
+        LinearLayout.LayoutParams cancelLp=new LinearLayout.LayoutParams(0,Ui.dp(activity,52),1);cancelLp.rightMargin=Ui.dp(activity,16);actions.addView(cancel,cancelLp);actions.addView(save,new LinearLayout.LayoutParams(0,Ui.dp(activity,52),1));
         View[] fields={title,artist,save};for(int i=0;i<2;i++){final int at=i;fields[i].setOnKeyListener((v,key,event)->{if(key!=KeyEvent.KEYCODE_DPAD_DOWN&&key!=KeyEvent.KEYCODE_DPAD_UP)return false;if(event.getAction()==KeyEvent.ACTION_DOWN)fields[Math.max(0,Math.min(2,at+(key==KeyEvent.KEYCODE_DPAD_DOWN?1:-1)))].requestFocus();return true;});}
         dialog.setContentView(panel);dialog.show();if(dialog.getWindow()!=null){dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);dialog.getWindow().setLayout(Ui.dp(activity,580),-2);dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);}
         Ui.installFocusMotion(panel);title.requestFocus();

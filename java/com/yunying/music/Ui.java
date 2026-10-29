@@ -214,7 +214,7 @@ public class Ui {
                 View source=activity.getWindow().getDecorView();
                 int[] origin=new int[2],location=new int[2];source.getLocationOnScreen(origin);v.getLocationOnScreen(location);
                 final android.graphics.Bitmap capture=android.graphics.Bitmap.createBitmap(Math.max(1,v.getWidth()/8),Math.max(1,v.getHeight()/8),android.graphics.Bitmap.Config.ARGB_8888);
-                android.graphics.Canvas canvas=new android.graphics.Canvas(capture);canvas.scale(1f/8,1f/8);canvas.translate(origin[0]-location[0],origin[1]-location[1]);float originalAlpha=v.getAlpha();v.setAlpha(0);try{if(!(activity instanceof PlayerActivity)||!((PlayerActivity)activity).drawGlassBackdrop(canvas))source.draw(canvas);}finally{v.setAlpha(originalAlpha);}
+                android.graphics.Canvas canvas=new android.graphics.Canvas(capture);canvas.scale(1f/8,1f/8);canvas.translate(origin[0]-location[0],origin[1]-location[1]);float originalAlpha=v.getAlpha();v.setAlpha(0);try{source.draw(canvas);}finally{v.setAlpha(originalAlpha);}
                 BLUR_WORKER.execute(()->{android.graphics.Bitmap blurred=blur(capture);capture.recycle();v.post(()->{
                     if(!v.isAttachedToWindow()||blurred==null)return;
                     android.graphics.drawable.BitmapDrawable backdrop=new android.graphics.drawable.BitmapDrawable(activity.getResources(),blurred);backdrop.setGravity(android.view.Gravity.FILL);backdrop.setAlpha(255);

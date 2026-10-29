@@ -30,7 +30,7 @@ final class GlassDrawable extends Drawable {
     private ValueAnimator animator;
     private final Runnable frame=()->invalidateSelf();
     private final Matrix rotation=new Matrix();
-    private boolean forced,outlineOnly,panelSurface;
+    private boolean forced,outlineOnly,panelSurface,managedFocus;
     GlassDrawable panelSurface(){panelSurface=true;return this;}
     GlassDrawable outlineOnly(){outlineOnly=true;return this;}
     GlassDrawable(Context c,float radius,boolean brightFocus){this.context=c;this.radius=Ui.dp(c,radius);this.stroke=Math.max(1,Ui.dp(c,1f));this.brightFocus=brightFocus;}
@@ -42,10 +42,11 @@ final class GlassDrawable extends Drawable {
         edge=new SweepGradient(bounds.centerX(),bounds.centerY(),Ui.light?new int[]{0xB0FFFFFF,0x706582A6,0xFFFFFFFF,0xB0FFFFFF}:new int[]{0x80FFFFFF,0xB3FFFFFF,0xFFFFFFFF,0x80FFFFFF},new float[]{0,.45f,.82f,1});
     }
     @Override protected boolean onStateChange(int[] states){
+        if(managedFocus)return false;
         boolean active=forced;for(int state:states)if(state==android.R.attr.state_focused||state==android.R.attr.state_pressed)active=true;
         return animateFocus(active?1:0,true);
     }
-    void setFocus(boolean active,boolean animated){forced=active;animateFocus(active?1:0,animated);}
+    void setFocus(boolean active,boolean animated){managedFocus=true;forced=active;if(!active)unscheduleSelf(frame);animateFocus(active?1:0,animated);}
     private boolean animateFocus(float target,boolean animated){
         if(target==targetFocus&&animated)return false;targetFocus=target;if(animator!=null)animator.cancel();
         if(!animated||!Ui.motionEnabled(context)||getCallback()==null){focus=target;invalidateSelf();return true;}
@@ -65,7 +66,7 @@ final class GlassDrawable extends Drawable {
         if(edge!=null){rotation.setRotate(Ui.motionEnabled(context)?(android.os.SystemClock.uptimeMillis()%2400)*360f/2400:0,bounds.centerX(),bounds.centerY());edge.setLocalMatrix(rotation);}
         paint.setStyle(Paint.Style.STROKE);
         if(panelSurface){
-            paint.setShader(null);paint.setStrokeWidth(1f);paint.setColor(Ui.light?0xFFEAF4FF:0xFFD4E3F3);paint.setAlpha(255);
+            paint.setShader(null);paint.setStrokeWidth(1f);paint.setColor(Ui.light?0xFFF2F7FD:0xFFD4E3F3);paint.setAlpha(255);
             RectF rim=new RectF(getBounds());rim.inset(.5f,.5f);canvas.drawRoundRect(rim,radius,radius,paint);
         }else{
             paint.setStrokeWidth(stroke+Ui.dp(context,.35f)*focus);paint.setShader(edge);paint.setAlpha((int)(alpha*(outlineOnly?focus:(.7f+.3f*focus))));canvas.drawRoundRect(bounds,radius,radius,paint);

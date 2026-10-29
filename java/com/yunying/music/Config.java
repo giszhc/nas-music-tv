@@ -15,6 +15,7 @@ public class Config {
     public static String nasSid = "";
     public static String nasToken = "";
     public static String nasName = "";
+    public static boolean nasLoggedOut=false;
 
     public static boolean lightTheme=true;
 
@@ -43,6 +44,7 @@ public class Config {
         nasSid     = p.getString("nasSid", "");
         nasToken   = p.getString("nasToken", "");
         nasName    = p.getString("nasName", "");
+        nasLoggedOut=p.getBoolean("nasLoggedOut",false);
         autoLyrics = p.getBoolean("autoLyrics", true);
         autoCover  = p.getBoolean("autoCover", true);
         lyricOffset = p.getInt("lyricOffset", 0);
@@ -57,13 +59,13 @@ public class Config {
                 .putBoolean("nasHttps", nasHttps)
                 .putString("nasUser", nasUser).putString("nasPass", nasPass)
                 .putString("nasSid", nasSid).putString("nasToken", nasToken)
-                .putString("nasName", nasName)
+                .putString("nasName", nasName).putBoolean("nasLoggedOut",nasLoggedOut)
                 .putBoolean("autoLyrics", autoLyrics).putBoolean("autoCover", autoCover).putInt("lyricOffset", lyricOffset)
                 .apply();
     }
 
     public static boolean nasReady() {
-        return nasHost != null && nasHost.trim().length() > 0
+        return !nasLoggedOut && nasHost != null && nasHost.trim().length() > 0
                 && nasUser != null && nasUser.trim().length() > 0;
     }
 

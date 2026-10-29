@@ -39,7 +39,7 @@ public final class MusicLibrary {
             for (int i = 0; i < a.length(); i++) {
                 JSONObject j = a.getJSONObject(i);
                 Entry e = new Entry(j.optString("name"), false, j.optString("source", Entry.SRC_NAS));
-                if(!Entry.SRC_NAS.equals(e.source))continue;
+                if(!Entry.SRC_NAS.equals(e.source)&&!Entry.SRC_LOCAL.equals(e.source))continue;
                 e.audiobook=j.optBoolean("audiobook",false)||"books".equals(name)||"bookRecent".equals(name);
                 e.path = j.optString("path"); e.id = j.optString("id"); e.size = j.optLong("size");
                 if (e.isAudio()) out.add(e);
@@ -116,13 +116,14 @@ public final class MusicLibrary {
             String result=new String(out);META_KEYS.put(identity,result);return result;
         } catch(Exception ex){return Integer.toHexString(identity.hashCode());}
     }
-    public static void metadata(Context c, Entry e, OnlineMeta.Meta m) {
+    public static void metadata(Context c, Entry e, OnlineMeta.Meta m) { metadata(c,e,m,true); }
+    public static void metadata(Context c, Entry e, OnlineMeta.Meta m,boolean updateNames) {
         if (m == null) return;
         String k = metaKey(e);
         android.content.SharedPreferences.Editor editor = prefs(c).edit();
-        if (!m.title.isEmpty()) editor.putString(k + "title", m.title);
-        if (!m.artist.isEmpty()) editor.putString(k + "artist", m.artist);
-        if (!m.album.isEmpty()) editor.putString(k + "album", m.album);
+        if (updateNames && !m.title.isEmpty()) editor.putString(k + "title", m.title);
+        if (updateNames && !m.artist.isEmpty()) editor.putString(k + "artist", m.artist);
+        if (updateNames && !m.album.isEmpty()) editor.putString(k + "album", m.album);
         editor.apply();
         if (m.cover != null) try {
             java.io.FileOutputStream stream = new java.io.FileOutputStream(new java.io.File(c.getFilesDir(), k + ".jpg"));
