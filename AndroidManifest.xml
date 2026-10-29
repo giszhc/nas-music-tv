@@ -23,7 +23,7 @@
         android:allowBackup="true"
         android:banner="@drawable/tv_banner"
         android:icon="@mipmap/ic_launcher"
-        android:label="云影音乐"
+        android:label="聆境音乐"
         android:supportsRtl="false"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">

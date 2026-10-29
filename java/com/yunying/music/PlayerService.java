@@ -148,7 +148,7 @@ public class PlayerService extends Service {
         createChannel();
         initSession();
         try {
-            startForeground(NOTIF_ID, buildNotification("云影音乐", "准备就绪", false));
+            startForeground(NOTIF_ID, buildNotification("聆境音乐", "准备就绪", false));
         } catch (Throwable ignored) { }
     }
 
