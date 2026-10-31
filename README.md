@@ -26,6 +26,26 @@
 
 原生 Android 应用，默认进入音乐首页。按照最新电视截图改为深灰背景、灰色卡片、白色遥控焦点；所有音乐源和配置集中在设置。
 
+## 系统截图
+
+### 播放页
+
+专辑封面、歌词与播放控制集中展示，支持收藏、切歌、队列及音效操作。
+
+![聆境音乐播放页](assets/screenshots/player.png)
+
+### 音乐目录
+
+浏览群晖目录并导入音乐或听书，也可管理独立的首页页签。
+
+![音乐目录与首页页签](assets/screenshots/music-directory.png)
+
+### 主题外观
+
+提供深色和亮色两套光感玻璃主题，切换后自动保存选择。
+
+![深浅主题预览](assets/screenshots/themes.png)
+
 ## 安装与使用
 
 安装 `YunYingMusic-2.0.1-tv.apk`，支持同签名覆盖升级。
@@ -96,4 +116,4 @@ adb shell am instrument -w com.yunying.music.test/.SoundProbe
 
 ## Git 仓库与签名
 
-仓库仅跟踪源码、资源、脚本、测试和文档；构建输出、截图、备份、APK 与 `keystore/` 均留在本地。要生成可覆盖现有安装的 APK，须自行安全备份并恢复原 `keystore/yunying.jks`。缺少密钥时构建脚本会生成新的开发签名，该签名不能覆盖原签名安装。请勿将私钥或真实账号凭据提交到仓库。
+仓库仅跟踪源码、资源、脚本、测试和文档；构建输出、运行截图、备份、APK 与 `keystore/` 均留在本地；README 展示截图保存在 `assets/screenshots/` 并随源码提交。要生成可覆盖现有安装的 APK，须自行安全备份并恢复原 `keystore/yunying.jks`。缺少密钥时构建脚本会生成新的开发签名，该签名不能覆盖原签名安装。请勿将私钥或真实账号凭据提交到仓库。
